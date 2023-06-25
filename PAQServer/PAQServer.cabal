@@ -15,6 +15,7 @@ library
   exposed-modules:
       Server
       Storage.Control
+      Storage.Coords
       Storage.Types
   other-modules:
       Paths_PAQServer

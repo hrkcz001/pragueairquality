@@ -6170,6 +6170,7 @@ var $author$project$Map$init = function (_v0) {
 };
 var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
+var $elm$core$String$fromFloat = _String_fromNumber;
 var $elm$core$Debug$log = _Debug_log;
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
@@ -6187,7 +6188,10 @@ var $author$project$Map$update = F2(
 			case 'Click':
 				var lngLat = msg.a.lngLat;
 				var renderedFeatures = msg.a.renderedFeatures;
-				var _v1 = A2($elm$core$Debug$log, 'pos', lngLat);
+				var _v1 = A2(
+					$elm$core$Debug$log,
+					'pos',
+					'lng: ' + ($elm$core$String$fromFloat(lngLat.lng) + (', lat: ' + $elm$core$String$fromFloat(lngLat.lat))));
 				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 			default:
 				if (msg.a.$ === 'Ok') {
@@ -6214,7 +6218,6 @@ var $gampleman$elm_mapbox$Mapbox$Style$Style = function (a) {
 var $gampleman$elm_mapbox$Internal$Expression = function (a) {
 	return {$: 'Expression', a: a};
 };
-var $elm$core$String$fromFloat = _String_fromNumber;
 var $elm$json$Json$Encode$string = _Json_wrap;
 var $gampleman$elm_mapbox$Mapbox$Expression$rgba = F4(
 	function (r, g, b, a) {
@@ -6225,11 +6228,11 @@ var $gampleman$elm_mapbox$Mapbox$Expression$rgba = F4(
 var $author$project$Map$colorFromLevel = function (level) {
 	switch (level) {
 		case 1:
-			return A4($gampleman$elm_mapbox$Mapbox$Expression$rgba, 255, 0, 0, 1);
+			return A4($gampleman$elm_mapbox$Mapbox$Expression$rgba, 0, 255, 0, 1);
 		case 2:
 			return A4($gampleman$elm_mapbox$Mapbox$Expression$rgba, 255, 255, 0, 1);
 		default:
-			return A4($gampleman$elm_mapbox$Mapbox$Expression$rgba, 0, 255, 0, 1);
+			return A4($gampleman$elm_mapbox$Mapbox$Expression$rgba, 255, 0, 0, 1);
 	}
 };
 var $gampleman$elm_mapbox$Mapbox$Style$MiscAttr = F2(
@@ -6720,6 +6723,19 @@ var $elm$core$Result$withDefault = F2(
 		}
 	});
 var $author$project$Map$regionsToSources = function (regions) {
+	var polygonClose = function (region) {
+		var _v1 = region.polygon;
+		if (!_v1.b) {
+			return _List_Nil;
+		} else {
+			var head = _v1.a;
+			var xs = _v1.b;
+			return _Utils_ap(
+				A2($elm$core$List$cons, head, xs),
+				_List_fromArray(
+					[head]));
+		}
+	};
 	var coords = function (region) {
 		return A2(
 			$elm$core$String$join,
@@ -6731,7 +6747,7 @@ var $author$project$Map$regionsToSources = function (regions) {
 					var lat = _v0.lat;
 					return '[' + ($elm$core$String$fromFloat(lng) + (', ' + ($elm$core$String$fromFloat(lat) + ']')));
 				},
-				region.polygon));
+				polygonClose(region)));
 	};
 	var regionToSource = function (region) {
 		return A2(
@@ -19948,8 +19964,8 @@ var $author$project$Map$view = function (model) {
 						misc: _List_fromArray(
 							[
 								$gampleman$elm_mapbox$Mapbox$Style$defaultCenter(
-								A2($gampleman$elm_mapbox$LngLat$LngLat, 20.39789404164037, 43.22523201923144)),
-								$gampleman$elm_mapbox$Mapbox$Style$defaultZoomLevel(1.5967483759772743),
+								A2($gampleman$elm_mapbox$LngLat$LngLat, 14.414220904827602, 50.09176980049028)),
+								$gampleman$elm_mapbox$Mapbox$Style$defaultZoomLevel(13),
 								$gampleman$elm_mapbox$Mapbox$Style$sprite('mapbox://sprites/mapbox/streets-v9'),
 								$gampleman$elm_mapbox$Mapbox$Style$glyphs('mapbox://fonts/mapbox/{fontstack}/{range}.pbf')
 							]),

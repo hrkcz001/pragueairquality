@@ -88,7 +88,7 @@ update msg model =
                     |> Json.Decode.decodeValue featureName
                     |> Result.withDefault ""
                     |> Debug.log "clicked"-}
-                _ = Debug.log "pos" lngLat
+                _ = Debug.log "pos" ("lng: " ++ (String.fromFloat lngLat.lng) ++ ", lat: " ++ (String.fromFloat lngLat.lat))
             in
             ( model, Cmd.none )
         GotRegions (Ok regions) ->
@@ -98,8 +98,12 @@ update msg model =
 
 regionsToSources : List Region -> List Source.Source
 regionsToSources regions =
-    let coords region =
-            region.polygon
+    let polygonClose region = case region.polygon of
+            [] -> []
+            (head :: xs) -> (head :: xs) ++ [ head ]
+        coords region =
+            region
+                |> polygonClose
                 |> List.map (\{ lng, lat } -> "[" ++ (String.fromFloat lng) ++ ", " ++ (String.fromFloat lat) ++ "]")
                 |> String.join ", "
         regionToSource region = Json.Decode.decodeString Json.Decode.value ("""
@@ -133,9 +137,9 @@ hoveredFeatures =
 
 colorFromLevel : Int -> E.Expression msg Color
 colorFromLevel level = case level of
-    1 -> E.rgba 255 0 0 1
+    1 -> E.rgba 0 255 0 1
     2 -> E.rgba 255 255 0 1
-    _ -> E.rgba 0 255 0 1
+    _ -> E.rgba 255 0 0 1
 
 view : Model -> Html Msg
 view model = div [ Html.Attributes.style "height" "100vh" ]
@@ -152,8 +156,8 @@ view model = div [ Html.Attributes.style "height" "100vh" ]
                     , sources = Source.vectorFromUrl "composite" "mapbox://mapbox.mapbox-terrain-v2,mapbox.mapbox-streets-v7"
                                 :: regionsToSources model.regions
                     , misc =
-                        [ Style.defaultCenter <| LngLat 20.39789404164037 43.22523201923144
-                        , Style.defaultZoomLevel 1.5967483759772743
+                        [ Style.defaultCenter <| LngLat 14.414220904827602 50.09176980049028
+                        , Style.defaultZoomLevel 13
                         , Style.sprite "mapbox://sprites/mapbox/streets-v9"
                         , Style.glyphs "mapbox://fonts/mapbox/{fontstack}/{range}.pbf"
                         ]

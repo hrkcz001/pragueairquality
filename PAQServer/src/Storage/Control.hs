@@ -8,6 +8,7 @@ module Storage.Control
     ) where
 
 import Storage.Types
+import Storage.Coords
 import qualified Data.Text as T
 import Database.SQLite.Simple
 import Database.SQLite.Simple.FromRow
@@ -22,25 +23,31 @@ initDb = do
 
 form :: Connection -> IO ()
 form db = do
-            execute_ db ("CREATE TABLE IF NOT EXISTS points (" <> 
-                         "order_number INTEGER, " <> 
-                         "lng REAL, " <>
-                         "lat REAL, " <>
-                         "region_name TEXT, " <>
-                         "PRIMARY KEY (order_number, region_name), " <>
-                         "FOREIGN KEY(region_name) REFERENCES regions(name)" <>
-                         " ON DELETE CASCADE)")
-            execute_ db ("CREATE TABLE IF NOT EXISTS regions (" <>
-                         "region_name TEXT PRIMARY KEY, " <>
-                         "level INTEGER NOT NULL CHECK (level >= 0))")
+            execute_ db "CREATE TABLE IF NOT EXISTS points (\ 
+                        \order_number INTEGER, \ 
+                        \lng REAL, \
+                        \lat REAL, \
+                        \region_name TEXT, \
+                        \PRIMARY KEY (order_number, region_name), \
+                        \FOREIGN KEY(region_name) REFERENCES regions(name)\
+                        \ ON DELETE CASCADE)"
+            execute_ db "CREATE TABLE IF NOT EXISTS regions ( \
+                        \region_name TEXT PRIMARY KEY, \
+                        \level INTEGER NOT NULL CHECK (level >= 0))"
 
 fill :: Connection -> IO ()
 fill db = do
-            execute db "INSERT INTO regions (region_name, level) VALUES (?, ?)" ("xui" :: T.Text, 3 :: Int)
-            execute db "INSERT INTO points (order_number, lng, lat, region_name) VALUES (?, ?, ?, ?)" (1 :: Int, -24.73 :: Float, 32.31 :: Float, "xui" :: T.Text)
-            execute db "INSERT INTO points (order_number, lng, lat, region_name) VALUES (?, ?, ?, ?)" (2 :: Int, -80.19 :: Float, 25.76 :: Float, "xui" :: T.Text)
-            execute db "INSERT INTO points (order_number, lng, lat, region_name) VALUES (?, ?, ?, ?)" (3 :: Int, -66.09 :: Float, 18.43 :: Float, "xui" :: T.Text)
-            execute db "INSERT INTO points (order_number, lng, lat, region_name) VALUES (?, ?, ?, ?)" (4 :: Int, -24.73 :: Float, 32.31 :: Float, "xui" :: T.Text)
+    execute db "INSERT INTO regions (region_name, level) VALUES (?, ?)" ("dejvice" :: T.Text, 2 :: Int)
+    execute db "INSERT INTO regions (region_name, level) VALUES (?, ?)" ("bubenec" :: T.Text, 2 :: Int)
+    execute db "INSERT INTO regions (region_name, level) VALUES (?, ?)" ("podbaba" :: T.Text, 1 :: Int)
+    execute db "INSERT INTO regions (region_name, level) VALUES (?, ?)" ("stromovka" :: T.Text, 1 :: Int)
+    execute db "INSERT INTO regions (region_name, level) VALUES (?, ?)" ("metronom" :: T.Text, 1 :: Int)
+    execute db "INSERT INTO regions (region_name, level) VALUES (?, ?)" ("holejsovice" :: T.Text, 2 :: Int)
+    execute db "INSERT INTO regions (region_name, level) VALUES (?, ?)" ("evrS" :: T.Text, 2 :: Int)
+    execute db "INSERT INTO regions (region_name, level) VALUES (?, ?)" ("hradcany" :: T.Text, 2 :: Int)
+    execute db "INSERT INTO regions (region_name, level) VALUES (?, ?)" ("vitezne" :: T.Text, 3 :: Int)
+    execute db "INSERT INTO regions (region_name, level) VALUES (?, ?)" ("center" :: T.Text, 3 :: Int)
+    Storage.Coords.coords db
 
 clear :: Connection -> IO ()
 clear db = do
