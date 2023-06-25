@@ -1,6 +1,6 @@
 module Main (main) where
 
-import ScottyExample
+import Server
 
 main :: IO ()
-main = ScottyExample.initHttpServer
+main = Server.initHttpServer

@@ -5,6 +5,7 @@ import Web.Scotty
 
 import Network.Wai.Middleware.RequestLogger -- install wai-extra if you don't have this
 
+import Data.Aeson
 import Control.Monad
 import Control.Monad.Trans
 import System.Random (newStdGen, randomRs)
