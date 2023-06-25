@@ -13,7 +13,6 @@ build-type:     Simple
 
 library
   exposed-modules:
-      ScottyExample
       Server
       Storage.Control
       Storage.Types
@@ -30,6 +29,7 @@ library
     , mtl
     , random
     , scotty
+    , split
     , sqlite-simple
     , text
     , wai-extra

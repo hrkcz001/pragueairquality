@@ -3,6 +3,7 @@ module Map exposing (main)
 import Styles.Streets exposing (styleLayers)
 
 import Browser
+import Http
 import Html exposing (div, text, Html)
 import Html.Attributes exposing (style)
 import Json.Decode
@@ -18,8 +19,7 @@ import Mapbox.Source as Source
 import Mapbox.Expression exposing (Color)
 
 type alias Model =
-    { position : LngLat
-    , regions : List Region
+    { regions : List Region
     , features : List Json.Encode.Value
     }
 
@@ -31,6 +31,7 @@ type alias Region =
 
 type Msg = Hover EventData
          | Click EventData
+         | GotRegions (Result Http.Error (List Region))
 
 main : Program () Model Msg
 main =
@@ -41,15 +42,34 @@ main =
         , subscriptions = always Sub.none
         }
 
+getRegions : Cmd Msg
+getRegions =
+    Http.request
+        { method = "GET"
+        , headers = []
+        , url = "regions"
+        , body = Http.emptyBody
+        , expect = Http.expectJson (GotRegions) (Json.Decode.list regionDecoder)
+        , timeout = Just 10000
+        , tracker = Nothing
+        }
+
+regionDecoder : Json.Decode.Decoder Region
+regionDecoder =
+    Json.Decode.map3 Region
+        (Json.Decode.at [ "name" ] Json.Decode.string)
+        (Json.Decode.at [ "level" ] Json.Decode.int)
+        (Json.Decode.at [ "polygon" ] (Json.Decode.list lngLatDecoder))
+
+lngLatDecoder : Json.Decode.Decoder LngLat
+lngLatDecoder =
+    Json.Decode.map2 LngLat
+        (Json.Decode.field "lng" Json.Decode.float)
+        (Json.Decode.field "lat" Json.Decode.float)
+
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { regions = [
-            Region "bermud" 3 [ LngLat -64.73 32.31
-            , LngLat -80.19 25.76
-            , LngLat -66.09 18.43
-            , LngLat -64.73 32.31
-            ]
-        ], position = LngLat 0 0, features = [] }, Cmd.none )
+    ( { regions = [], features = [] }, getRegions )
 
 featureName : Json.Decode.Decoder String
 featureName =
@@ -59,16 +79,21 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Hover { lngLat, renderedFeatures } ->
-            ( { model | position = lngLat, features = renderedFeatures }, Cmd.none )
+            ( { model | features = renderedFeatures }, Cmd.none )
 
         Click { lngLat, renderedFeatures } ->
-            let _ = renderedFeatures
+            let {-_ = renderedFeatures
                     |> List.head
                     |> Maybe.withDefault Json.Encode.null
                     |> Json.Decode.decodeValue featureName
                     |> Result.withDefault ""
-                    |> Debug.log "clicked"
+                    |> Debug.log "clicked"-}
+                _ = Debug.log "pos" lngLat
             in
+            ( model, Cmd.none )
+        GotRegions (Ok regions) ->
+            ( { model | regions = regions }, Cmd.none )
+        GotRegions (Err _) ->
             ( model, Cmd.none )
 
 regionsToSources : List Region -> List Source.Source

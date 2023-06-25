@@ -29,6 +29,7 @@ library:
     - base-compat
     - sqlite-simple
     - aeson
+    - split
 
 
 executables:
