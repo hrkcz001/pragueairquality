@@ -92,10 +92,10 @@ update msg model =
         MapMsg mapMsg ->
             let
                 ( newMapModel, mapCmd ) =
-                    Map.update mapMsg model.mapModel
+                    Map.update MapMsg mapMsg model.mapModel
             in
             ( { model | mapModel = newMapModel }
-            , Cmd.map MapMsg mapCmd
+            , mapCmd
             )
         GoTo url ->
             ( model

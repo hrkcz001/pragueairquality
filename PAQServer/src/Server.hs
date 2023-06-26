@@ -2,23 +2,11 @@
 module Server (initHttpServer) where
 
 import Web.Scotty
-import Storage.Control
-import Storage.Types
-
-import Network.Wai.Middleware.RequestLogger -- install wai-extra if you don't have this
-
-import Control.Monad
+import Network.Wai.Middleware.RequestLogger
 import Control.Monad.Trans
-import System.Random (newStdGen, randomRs)
+import Data.Text.Lazy (Text)
 
-import Network.HTTP.Types (status302)
-
-import Data.Text.Lazy.Encoding (decodeUtf8)
-import Data.Text.Lazy (Text, pack)
-import Data.String (fromString)
-import Prelude
-import Prelude.Compat
-
+import Storage.Control
 
 initHttpServer :: IO ()
 initHttpServer = do
@@ -42,16 +30,23 @@ startHandling db = scotty 3000 $ do
                     setHeader "Content-Type" "text/html"
                     file "../WebApp/dist/index.html"
             else next
-    
-    -- send main.js
-    get "/static/main.js" $ do
-        setHeader "Content-Type" "application/javascript"
-        file "../WebApp/dist/main.js"
+
+    -- send file
+    get "/static/:file" $ do
+        requestedFile <- param "file" :: ActionM Text
+        case requestedFile of
+            "main.js" -> do
+                    setHeader "Content-Type" "application/javascript"
+                    file "../WebApp/dist/main.js"
+            _ -> next
 
     -- send regions {name : text, level : int, polygon : list of {lat : float, lon : float}}
     get "/regions" $ do
-        reg <- liftIO $ Storage.Control.selectRegions db
-        json reg
+        regions <- liftIO $ Storage.Control.selectRegions db
+        json regions
+
+    get "/region/:id" $ do
+        next
 
     -- clear database
     get "/clear" $ do

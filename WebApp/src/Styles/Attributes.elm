@@ -1,5 +1,6 @@
 module Styles.Attributes exposing
     ( map
+    , regionInfo
     , addDebt
     , content
     , dropdown
@@ -15,7 +16,6 @@ module Styles.Attributes exposing
 import Html exposing (Attribute)
 import Html.Attributes as Attributes
 
-
 content : List (Attribute msg)
 content =
     [ Attributes.style "display" "flex" ]
@@ -23,10 +23,23 @@ content =
 map : List (Attribute msg)
 map =
     [ Attributes.style "width" "80%"
-    , Attributes.style "height" "90%"
+    , Attributes.style "height" "93%"
     , Attributes.style "position" "absolute"
-    , Attributes.style "top" "10%"
+    , Attributes.style "top" "7%"
     , Attributes.style "left" "20%"
+    , Attributes.style "overflow" "auto"
+    ]
+
+regionInfo : List (Attribute msg)
+regionInfo =
+    [ Attributes.style "position" "absolute"
+    , Attributes.style "top" "0"
+    , Attributes.style "left" "0"
+    , Attributes.style "width" "20%"
+    , Attributes.style "height" "100%"
+    , Attributes.style "overflow" "auto"
+    , Attributes.style "padding" "1rem"
+    , Attributes.style "border-right" "1px solid #000"
     ]
 
 personList : List (Attribute msg)

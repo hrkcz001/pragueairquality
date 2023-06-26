@@ -1,7 +1,5 @@
 module Map exposing (Model, Msg(..), init, update, view)
 
-import Styles.Streets exposing (styleLayers)
-
 import Browser
 import Http
 import Html exposing (div, text, Html)
@@ -19,9 +17,13 @@ import Mapbox.Style as Style exposing (Style(..))
 import Mapbox.Source as Source
 import Mapbox.Expression exposing (Color)
 
+import Styles.Streets exposing (styleLayers)
+import Requests
+
 type alias Model =
     { regions : List Region
     , features : List Json.Encode.Value
+    , selectedRegion : Maybe RegionInfo
     }
 
 type alias Region =
@@ -30,63 +32,51 @@ type alias Region =
     , polygon : List LngLat
     }
 
+type alias RegionInfo =
+    { name : String
+    , status : String
+    , description : String
+    }
+
 type Msg = Hover EventData
          | Click EventData
          | GotRegions (Result Http.Error (List Region))
-
-getRegions : Cmd Msg
-getRegions =
-    Http.request
-        { method = "GET"
-        , headers = []
-        , url = "regions"
-        , body = Http.emptyBody
-        , expect = Http.expectJson (GotRegions) (Json.Decode.list regionDecoder)
-        , timeout = Just 10000
-        , tracker = Nothing
-        }
-
-regionDecoder : Json.Decode.Decoder Region
-regionDecoder =
-    Json.Decode.map3 Region
-        (Json.Decode.at [ "name" ] Json.Decode.string)
-        (Json.Decode.at [ "level" ] Json.Decode.int)
-        (Json.Decode.at [ "polygon" ] (Json.Decode.list lngLatDecoder))
-
-lngLatDecoder : Json.Decode.Decoder LngLat
-lngLatDecoder =
-    Json.Decode.map2 LngLat
-        (Json.Decode.field "lng" Json.Decode.float)
-        (Json.Decode.field "lat" Json.Decode.float)
+         | GotRegion (Result Http.Error RegionInfo)
 
 init : ( Model, Cmd Msg )
 init =
-    ({ regions = [], features = [] }, getRegions )
+    ({ regions = [], features = [], selectedRegion = Nothing }, Requests.getRegions GotRegions)
 
 featureName : Json.Decode.Decoder String
 featureName =
     Json.Decode.at [ "properties", "name" ] Json.Decode.string
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update : ( Msg -> msg ) -> Msg -> Model -> ( Model, Cmd msg )
+update wrapMsg msg model =
     case msg of
         Hover { lngLat, renderedFeatures } ->
             ( { model | features = renderedFeatures }, Cmd.none )
 
         Click { lngLat, renderedFeatures } ->
-            let {-_ = renderedFeatures
+            let _ = Debug.log "pos" ("lng: " ++ (String.fromFloat lngLat.lng) ++ ", lat: " ++ (String.fromFloat lngLat.lat))
+                regionName= renderedFeatures
                     |> List.head
                     |> Maybe.withDefault Json.Encode.null
                     |> Json.Decode.decodeValue featureName
                     |> Result.withDefault ""
-                    |> Debug.log "clicked"-}
-                _ = Debug.log "pos" ("lng: " ++ (String.fromFloat lngLat.lng) ++ ", lat: " ++ (String.fromFloat lngLat.lat))
+                newSelectedRegion = case regionName of
+                    "" -> Cmd.none
+                    _ -> Requests.getRegionInfo regionName (wrapMsg << GotRegion)
             in
-            ( model, Cmd.none )
+            ( model, newSelectedRegion )
         GotRegions (Ok regions) ->
             ( { model | regions = regions }, Cmd.none )
         GotRegions (Err _) ->
             ( model, Cmd.none )
+        GotRegion (Ok regionInfo) ->
+            ( { model | selectedRegion = Just regionInfo }, Cmd.none )
+        GotRegion (Err _) ->
+            ( { model | selectedRegion = Nothing }, Cmd.none )
 
 regionsToSources : List Region -> List Source.Source
 regionsToSources regions =
@@ -134,9 +124,28 @@ colorFromLevel level = case level of
     _ -> E.rgba 255 0 0 1
 
 view : Model -> Html Msg
-view model = div Styles.Attributes.map
+view model =
+    div []
+        [ viewMap model
+        , viewRegionInfo model.selectedRegion
+        ]
+
+viewRegionInfo : Maybe RegionInfo -> Html Msg
+viewRegionInfo regionInfo = 
+    let content = case regionInfo of
+                    Nothing -> [ Html.h2 [] [ text "No region selected" ] ]
+                    Just info -> [ Html.h2 [] [ text info.name ]
+                                 , Html.h3 [] [ text info.status ]
+                                 , Html.p [] [ text info.description ]
+                                 ]
+    in 
+    div Styles.Attributes.regionInfo content
+
+viewMap : Model -> Html Msg
+viewMap model = div Styles.Attributes.map
             [map
-                [ onMouseMove Hover
+                [ maxZoom 18
+                , onMouseMove Hover
                 , onClick Click
                 , id "paq-map"
                 , eventFeaturesLayers ( List.map (\region -> region.name) model.regions )
@@ -148,8 +157,8 @@ view model = div Styles.Attributes.map
                     , sources = Source.vectorFromUrl "composite" "mapbox://mapbox.mapbox-terrain-v2,mapbox.mapbox-streets-v7"
                                 :: regionsToSources model.regions
                     , misc =
-                        [ Style.defaultCenter <| LngLat 14.414220904827602 50.09176980049028
-                        , Style.defaultZoomLevel 13
+                        [ Style.defaultCenter <| LngLat 14.414298934048219 50.10039088358974
+                        , Style.defaultZoomLevel 13.1
                         , Style.sprite "mapbox://sprites/mapbox/streets-v9"
                         , Style.glyphs "mapbox://fonts/mapbox/{fontstack}/{range}.pbf"
                         ]
