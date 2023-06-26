@@ -1,6 +1,6 @@
-
-module Styles exposing
-    ( addDebt
+module Styles.Attributes exposing
+    ( map
+    , addDebt
     , content
     , dropdown
     , input
@@ -20,6 +20,14 @@ content : List (Attribute msg)
 content =
     [ Attributes.style "display" "flex" ]
 
+map : List (Attribute msg)
+map =
+    [ Attributes.style "width" "80%"
+    , Attributes.style "height" "90%"
+    , Attributes.style "position" "absolute"
+    , Attributes.style "top" "10%"
+    , Attributes.style "left" "20%"
+    ]
 
 personList : List (Attribute msg)
 personList =

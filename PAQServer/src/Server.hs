@@ -27,36 +27,38 @@ initHttpServer = do
 
 startHandling :: Connection -> IO ()
 startHandling db = scotty 3000 $ do
-    -- Add any WAI middleware, they are run top-down.
+    -- console logging middleware
     middleware logStdoutDev
 
-    get "/foo" $ do
-        text "bar!"
-
+    -- top level redirects to map
     get "/" $ do
-        setHeader "Content-Type" "text/html"
-        file "../WebApp/index.html"
+        redirect "/map"
 
-    -- Send Elm app
-    get "/main" $ do
+    -- send index.html and preserve url if page were requested
+    get "/:page" $ do
+        page <- param "page" :: ActionM Text
+        if page `elem` ["map", "test"]
+            then do
+                    setHeader "Content-Type" "text/html"
+                    file "../WebApp/dist/index.html"
+            else next
+    
+    -- send main.js
+    get "/static/main.js" $ do
         setHeader "Content-Type" "application/javascript"
-        file "../WebApp/main.js"
-    get "/starter" $ do
-        setHeader "Content-Type" "application/javascript"
-        file "../WebApp/starter.js"
-    get "/elm-mapbox" $ do
-        setHeader "Content-Type" "application/javascript"
-        file "../WebApp/node_modules/elm-mapbox/dist/elm-mapbox.umd.js"
+        file "../WebApp/dist/main.js"
 
     -- send regions {name : text, level : int, polygon : list of {lat : float, lon : float}}
     get "/regions" $ do
         reg <- liftIO $ Storage.Control.selectRegions db
         json reg
 
+    -- clear database
     get "/clear" $ do
         _ <- liftIO $ Storage.Control.clear db
         redirect "/"
 
+    -- clear and fill database with predefined data
     get "/refill" $ do
         _ <- liftIO $ Storage.Control.clear db
         _ <- liftIO $ Storage.Control.fill db

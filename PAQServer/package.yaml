@@ -30,6 +30,7 @@ library:
     - sqlite-simple
     - aeson
     - split
+    - wai-cors
 
 
 executables:

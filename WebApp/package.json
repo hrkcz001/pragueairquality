@@ -1,8 +1,12 @@
 {
   "dependencies": {
-    "elm": "^0.19.1-5"
+    "elm": "^0.19.1-5",
+    "elm-webpack-loader": "^8.0.0",
+    "html-webpack-plugin": "^5.5.3"
   },
   "devDependencies": {
-    "elm-mapbox": "^4.1.0"
+    "elm-mapbox": "^4.1.0",
+    "webpack": "^5.88.0",
+    "webpack-cli": "^5.1.4"
   }
 }

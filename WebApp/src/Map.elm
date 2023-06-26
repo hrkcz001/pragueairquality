@@ -1,4 +1,4 @@
-module Map exposing (main)
+module Map exposing (Model, Msg(..), init, update, view)
 
 import Styles.Streets exposing (styleLayers)
 
@@ -8,6 +8,7 @@ import Html exposing (div, text, Html)
 import Html.Attributes exposing (style)
 import Json.Decode
 import Json.Encode
+import Styles.Attributes
 import LngLat exposing (LngLat)
 import Mapbox.Cmd.Option as Opt
 import Mapbox.Element exposing (..)
@@ -32,15 +33,6 @@ type alias Region =
 type Msg = Hover EventData
          | Click EventData
          | GotRegions (Result Http.Error (List Region))
-
-main : Program () Model Msg
-main =
-    Browser.element
-        { init = init
-        , view = view
-        , update = update
-        , subscriptions = always Sub.none
-        }
 
 getRegions : Cmd Msg
 getRegions =
@@ -67,9 +59,9 @@ lngLatDecoder =
         (Json.Decode.field "lng" Json.Decode.float)
         (Json.Decode.field "lat" Json.Decode.float)
 
-init : () -> ( Model, Cmd Msg )
-init _ =
-    ( { regions = [], features = [] }, getRegions )
+init : Model
+init =
+    { regions = [], features = [] }
 
 featureName : Json.Decode.Decoder String
 featureName =
@@ -142,7 +134,7 @@ colorFromLevel level = case level of
     _ -> E.rgba 255 0 0 1
 
 view : Model -> Html Msg
-view model = div [ Html.Attributes.style "height" "100vh" ]
+view model = div Styles.Attributes.map
             [map
                 [ onMouseMove Hover
                 , onClick Click
