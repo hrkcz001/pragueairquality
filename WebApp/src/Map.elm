@@ -59,9 +59,9 @@ lngLatDecoder =
         (Json.Decode.field "lng" Json.Decode.float)
         (Json.Decode.field "lat" Json.Decode.float)
 
-init : Model
+init : ( Model, Cmd Msg )
 init =
-    { regions = [], features = [] }
+    ({ regions = [], features = [] }, getRegions )
 
 featureName : Json.Decode.Decoder String
 featureName =

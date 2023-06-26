@@ -58,12 +58,16 @@ init token url key =
     let
         route =
             toRoute url
+        ( mapModel, mapCmd ) =
+            Map.init
     in
     ( { key = key
       , route = route
-      , mapModel = Map.init
+      , mapModel = mapModel
       }
-    , Cmd.none
+    , Cmd.batch
+        [ Cmd.map MapMsg mapCmd
+        ]
     )
 
 update : Msg -> Model -> ( Model, Cmd Msg )
