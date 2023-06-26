@@ -1,8 +1,9 @@
 {-# LANGUAGE DeriveGeneric #-}
-module Storage.Types (
-    Region(..),
-    LngLat(..)
-) where
+module Storage.Types 
+    (   Region(..)
+    ,   LngLat(..)
+    ,   RegionInfo(..)
+    ) where
 
 import GHC.Generics
 import Data.Aeson (ToJSON)
@@ -20,8 +21,12 @@ instance FromRow Region where
             [lngStr, latStr] -> LngLat (read lngStr) (read latStr)
             _ -> error "Invalid LngLat format"
 
+instance FromRow RegionInfo where
+    fromRow = RegionInfo <$> field <*> field <*> field
+
 instance ToJSON LngLat
 instance ToJSON Region
+instance ToJSON RegionInfo
 
 data LngLat = LngLat {
     lng :: Float,
@@ -32,4 +37,10 @@ data Region = Region {
     name :: String,
     level :: Int,
     polygon :: [LngLat]
+} deriving (Show, Generic)
+
+data RegionInfo = RegionInfo {
+    complete_name :: String,
+    status :: String,
+    description :: String
 } deriving (Show, Generic)

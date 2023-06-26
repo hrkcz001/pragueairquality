@@ -1,10 +1,9 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Server (initHttpServer) where
 
 import Web.Scotty
 import Network.Wai.Middleware.RequestLogger
 import Control.Monad.Trans
-import Data.Text.Lazy (Text)
+import Data.Text (Text)
 
 import Storage.Control
 
@@ -45,16 +44,14 @@ startHandling db = scotty 3000 $ do
         regions <- liftIO $ Storage.Control.selectRegions db
         json regions
 
-    get "/region/:id" $ do
-        next
-
-    -- clear database
-    get "/clear" $ do
-        _ <- liftIO $ Storage.Control.clear db
-        redirect "/"
+    get "/region/:name" $ do
+        name <- param "name" :: ActionM Text
+        region <- liftIO $ Storage.Control.selectRegion db name
+        case region of
+            Nothing -> raise "Region not found"
+            Just r -> json r
 
     -- clear and fill database with predefined data
     get "/refill" $ do
-        _ <- liftIO $ Storage.Control.clear db
-        _ <- liftIO $ Storage.Control.fill db
+        _ <- liftIO $ Storage.Control.refill db
         redirect "/"

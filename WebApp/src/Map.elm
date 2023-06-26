@@ -4,6 +4,7 @@ import Browser
 import Http
 import Html exposing (div, text, Html)
 import Html.Attributes exposing (style)
+import Html.Events 
 import Json.Decode
 import Json.Encode
 import Styles.Attributes
@@ -42,6 +43,7 @@ type Msg = Hover EventData
          | Click EventData
          | GotRegions (Result Http.Error (List Region))
          | GotRegion (Result Http.Error RegionInfo)
+         | CloseInfo
 
 init : ( Model, Cmd Msg )
 init =
@@ -76,6 +78,8 @@ update wrapMsg msg model =
         GotRegion (Ok regionInfo) ->
             ( { model | selectedRegion = Just regionInfo }, Cmd.none )
         GotRegion (Err _) ->
+            ( { model | selectedRegion = Nothing }, Cmd.none )
+        CloseInfo ->
             ( { model | selectedRegion = Nothing }, Cmd.none )
 
 regionsToSources : List Region -> List Source.Source
@@ -132,14 +136,15 @@ view model =
 
 viewRegionInfo : Maybe RegionInfo -> Html Msg
 viewRegionInfo regionInfo = 
-    let content = case regionInfo of
-                    Nothing -> [ Html.h2 [] [ text "No region selected" ] ]
-                    Just info -> [ Html.h2 [] [ text info.name ]
+    case regionInfo of
+                    Just info -> div Styles.Attributes.regionInfo
+                                 [ Html.h2 [] [ text info.name ]
                                  , Html.h3 [] [ text info.status ]
                                  , Html.p [] [ text info.description ]
+                                 , Html.button (Styles.Attributes.closeButton ++
+                                     [ Html.Events.onClick CloseInfo ]) [text "X"]
                                  ]
-    in 
-    div Styles.Attributes.regionInfo content
+                    Nothing ->  Html.div [] []
 
 viewMap : Model -> Html Msg
 viewMap model = div Styles.Attributes.map

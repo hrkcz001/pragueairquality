@@ -34,7 +34,7 @@ getRegionInfo region msg =
     Http.request
         { method = "GET"
         , headers = []
-        , url = "regions?name=" ++ region
+        , url = "region/" ++ region
         , body = Http.emptyBody
         , expect = Http.expectJson msg regionInfoDecoder
         , timeout = Just 10000
@@ -44,6 +44,6 @@ getRegionInfo region msg =
 regionInfoDecoder : Json.Decode.Decoder { name : String, status : String, description : String }
 regionInfoDecoder =
     Json.Decode.map3 (\name status description -> { name = name, status = status, description = description })
-        (Json.Decode.field "name" Json.Decode.string)
+        (Json.Decode.field "complete_name" Json.Decode.string)
         (Json.Decode.field "status" Json.Decode.string)
         (Json.Decode.field "description" Json.Decode.string)

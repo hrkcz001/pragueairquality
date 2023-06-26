@@ -1,13 +1,12 @@
-{-# LANGUAGE OverloadedStrings #-}
-module Storage.Coords (
-    coords
+module Storage.Fill.Coords (
+    fill
 ) where
 
 import qualified Data.Text as T
 import Database.SQLite.Simple (Connection, execute)
 
-coords :: Connection -> IO ()
-coords db = do
+fill :: Connection -> IO ()
+fill db = do
     --dejvice
     execute db "INSERT INTO points (order_number, lng, lat, region_name) VALUES (?, ?, ?, ?)" (1 :: Int, 14.395352331885817 :: Float, 50.10084005800462 :: Float, "dejvice" :: T.Text)
     execute db "INSERT INTO points (order_number, lng, lat, region_name) VALUES (?, ?, ?, ?)" (2 :: Int, 14.385481802715589 :: Float, 50.100234448090276 :: Float, "dejvice" :: T.Text)

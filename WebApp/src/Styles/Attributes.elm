@@ -1,6 +1,7 @@
 module Styles.Attributes exposing
     ( map
     , regionInfo
+    , closeButton
     , addDebt
     , content
     , dropdown
@@ -22,23 +23,36 @@ content =
 
 map : List (Attribute msg)
 map =
-    [ Attributes.style "width" "80%"
+    [ Attributes.style "position" "absolute"
+    , Attributes.style "width" "100%"
     , Attributes.style "height" "93%"
-    , Attributes.style "position" "absolute"
     , Attributes.style "top" "7%"
-    , Attributes.style "left" "20%"
-    , Attributes.style "overflow" "auto"
+    , Attributes.style "left" "0%"
+    , Attributes.style "overflow" "hidden"
+    ]
+
+closeButton : List (Attribute msg)
+closeButton =
+    [ Attributes.style "position" "absolute"
+    , Attributes.style "top" "0"
+    , Attributes.style "right" "0"
+    , Attributes.style "cursor" "pointer"
+    , Attributes.style "font-weight" "bold"
+    , Attributes.style "color" "#000"
+    , Attributes.style "text-decoration" "none"
     ]
 
 regionInfo : List (Attribute msg)
 regionInfo =
     [ Attributes.style "position" "absolute"
-    , Attributes.style "top" "0"
-    , Attributes.style "left" "0"
     , Attributes.style "width" "20%"
     , Attributes.style "height" "100%"
+    , Attributes.style "top" "0%"
+    , Attributes.style "left" "0%"
     , Attributes.style "overflow" "auto"
+    , Attributes.style "background-color" "#fff"
     , Attributes.style "padding" "1rem"
+    , Attributes.style "box-sizing" "border-box"
     , Attributes.style "border-right" "1px solid #000"
     ]
 
