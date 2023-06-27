@@ -26,6 +26,9 @@ form db = do
                         \creator TEXT NOT NULL, \
                         \description TEXT NOT NULL, \
                         \UNIQUE (lng, lat))"
+            execute_ db "CREATE TABLE IF NOT EXISTS users ( \
+                        \login TEXT PRIMARY KEY, \
+                        \password TEXT NOT NULL)"
 
 -- | Drop tables and create them again
 recreate :: Connection -> IO ()

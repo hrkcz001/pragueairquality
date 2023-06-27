@@ -5,10 +5,11 @@ module Storage.Types
     ,   RegionInfo(..)
     ,   Event(..)
     ,   EventInfo(..)
+    ,   InsertEvent(..)
     ) where
 
 import GHC.Generics
-import Data.Aeson (ToJSON)
+import Data.Aeson (ToJSON, FromJSON)
 import Database.SQLite.Simple.FromRow (FromRow(..), field)
 import Data.List.Split (splitOn)
 
@@ -37,6 +38,7 @@ instance ToJSON Region
 instance ToJSON RegionInfo
 instance ToJSON Event
 instance ToJSON EventInfo
+instance FromJSON InsertEvent
 
 data LngLat = LngLat {
     point_lng :: Float,
@@ -64,4 +66,11 @@ data Event = Event {
 data EventInfo = EventInfo {
     event_creator :: String,
     event_description :: String
+} deriving (Show, Generic)
+
+data InsertEvent = InsertEvent {
+    insert_event_lng :: Float,
+    insert_event_lat :: Float,
+    insert_event_creator :: String,
+    insert_event_description :: String
 } deriving (Show, Generic)

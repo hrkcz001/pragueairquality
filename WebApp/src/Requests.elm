@@ -1,7 +1,8 @@
-module Requests exposing (getRegions, getRegionInfo, getEvents, getEventInfo)
+module Requests exposing (getRegions, getRegionInfo, getEvents, getEventInfo, postEvent, getAbout)
 
 import Http
 import Json.Decode
+import Json.Encode
 import LngLat exposing (LngLat)
 
 getRegions : (Result Http.Error (List { name : String, level : Int, polygon : List LngLat }) -> msg) -> Cmd msg
@@ -53,7 +54,7 @@ getRegionInfo region msg =
     Http.request
         { method = "GET"
         , headers = []
-        , url = "api/region/" ++ region
+        , url = "api/regions/" ++ region
         , body = Http.emptyBody
         , expect = Http.expectJson msg regionInfoDecoder
         , timeout = Just 10000
@@ -72,7 +73,7 @@ getEventInfo event msg =
     Http.request
         { method = "GET"
         , headers = []
-        , url = "api/event/" ++ event
+        , url = "api/events/" ++ event
         , body = Http.emptyBody
         , expect = Http.expectJson msg eventInfoDecoder
         , timeout = Just 10000
@@ -84,3 +85,32 @@ eventInfoDecoder =
     Json.Decode.map2 (\creator description -> { creator = creator, description = description })
         (Json.Decode.field "event_creator" Json.Decode.string)
         (Json.Decode.field "event_description" Json.Decode.string)
+
+getAbout : (Result Http.Error String -> msg) -> Cmd msg
+getAbout msg =
+    Http.request
+        { method = "GET"
+        , headers = []
+        , url = "static/about.txt"
+        , body = Http.emptyBody
+        , expect = Http.expectString msg
+        , timeout = Just 10000
+        , tracker = Nothing
+        }
+
+postEvent : LngLat -> String -> String -> (Result Http.Error (List { id : String, lng : Float, lat : Float }) -> msg) -> Cmd msg
+postEvent lngLat creator description msg =
+    Http.request
+        { method = "POST"
+        , headers = []
+        , url = "api/events"
+        , body = Http.jsonBody (Json.Encode.object
+            [ ( "insert_event_lng", Json.Encode.float lngLat.lng )
+            , ( "insert_event_lat", Json.Encode.float lngLat.lat )
+            , ( "insert_event_creator", Json.Encode.string creator )
+            , ( "insert_event_description", Json.Encode.string description )
+            ])
+        , expect = Http.expectJson msg (Json.Decode.list eventDecoder)
+        , timeout = Just 10000
+        , tracker = Nothing
+        }

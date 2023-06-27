@@ -1,0 +1,13 @@
+Welcome to our website! This project has been an exciting learning experience for me. I had the opportunity to explore various technologies and tools to develop a website that focusing on improving air quality and promoting environmental awareness.
+
+For the server-side, I used Haskell Scotty, a lightweight engine for web-applications. It allowed me to handle routing and create RESTful APIs efficiently, providing a solid foundation for the backend infrastructure.
+
+The incorporation of the Database.SQLite.Simple package into my project simplified my interaction with the SQLite database. It offered me a straightforward and intuitive approach to execute SQL queries, retrieve data, and carry out essential database tasks effortlessly within my Haskell codebase.
+
+To optimize performance and organization, I integrated webpack, a module bundler.
+
+For the air quality map, I utilized Mapbox, a versatile mapping platform. Its APIs and tools helped me create an interactive map displaying real-time air quality data in different areas of Prague.
+
+The core of the web application was written in Elm, a functional programming language designed for web development. I implemented features like events, encouraging users to participate in activities focused on improving air quality and the environment.
+
+Throughout the development process, I gained insights into web development practices, including front-end design, back-end integration, and data visualization. 

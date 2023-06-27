@@ -1,22 +1,17 @@
 module Map exposing (Model, Msg(..), Mode(..), init, update, view)
 
-import Browser
 import Http
 import Html exposing (div, text, Html)
-import Html.Attributes exposing (style)
+import Html.Attributes
 import Html.Events 
 import Json.Decode
 import Json.Encode
 import Styles.Attributes
 import LngLat exposing (LngLat)
-import Mapbox.Cmd.Option as Opt
 import Mapbox.Element exposing (..)
-import Mapbox.Expression as E exposing (false, float, int, str, true)
-import Mapbox.Layer as Layer
 import Mapbox.Source as Source
 import Mapbox.Style as Style exposing (Style(..))
 import Mapbox.Source as Source
-import Mapbox.Expression exposing (Color)
 
 import Styles.Streets exposing (styleLayers)
 import Requests
@@ -29,11 +24,15 @@ type alias Model =
     , selectedRegion : Maybe RegionInfo
     , events : List Event
     , selectedEvent : Maybe EventInfo
+    , insertMode : Bool
+    , inserting : Maybe LngLat
+    , insertedDetails : Maybe String
+    , about : String
     }
 
 type Mode = Regions
-          | Clear
           | Events
+          | About
 
 type Msg = Hover EventData
          | Click EventData
@@ -43,11 +42,19 @@ type Msg = Hover EventData
          | GotEvents (Result Http.Error (List Event))
          | GotEvent (Result Http.Error EventInfo)
          | CloseEventInfo
+         | InsertMode
+         | CancelInsertMode
+         | Inserting LngLat
+         | InsertedDetails String
+         | SubmitInsert
+         | GotAbout (Result Http.Error String)
 
 init : ( Msg -> msg ) -> ( Model, Cmd msg )
 init wrapMsg =
-    ({ features = [], regions = [], selectedRegion = Nothing, events = [], selectedEvent = Nothing }, Cmd.batch [ Requests.getRegions (wrapMsg << GotRegions)
+    ({ features = [], regions = [], selectedRegion = Nothing, events = [], selectedEvent = Nothing, insertMode = False, 
+    inserting = Nothing, insertedDetails = Nothing, about = "" }, Cmd.batch [ Requests.getRegions (wrapMsg << GotRegions)
                                                                          , Requests.getEvents (wrapMsg << GotEvents)
+                                                                         , Requests.getAbout (wrapMsg << GotAbout)
                                                                          ])
 
 featureName : Json.Decode.Decoder String
@@ -57,12 +64,11 @@ featureName =
 update : ( Msg -> msg ) -> Msg -> Model -> ( Model, Cmd msg )
 update wrapMsg msg model =
     case msg of
-        Hover { lngLat, renderedFeatures } ->
+        Hover { renderedFeatures } ->
             ( { model | features = renderedFeatures }, Cmd.none )
 
         Click { lngLat, renderedFeatures } ->
-            let _ = Debug.log "pos" ("lng: " ++ (String.fromFloat lngLat.lng) ++ ", lat: " ++ (String.fromFloat lngLat.lat))
-                feature = renderedFeatures
+            let feature = renderedFeatures
                     |> List.head
                     |> Maybe.withDefault Json.Encode.null
                     |> Json.Decode.decodeValue featureName
@@ -81,7 +87,11 @@ update wrapMsg msg model =
                                 _ -> Requests.getEventInfo featName (wrapMsg << GotEvent)
                         _ -> Cmd.none
             in
-            ( model, cmd )
+            if model.insertMode
+                then case model.inserting of
+                        Just _ -> ( model, Cmd.none )
+                        Nothing -> ( { model | inserting = Just lngLat }, Cmd.none )
+                else ( model, cmd )
                 
         GotRegions (Ok regions) ->
             ( { model | regions = regions }, Cmd.none )
@@ -103,6 +113,22 @@ update wrapMsg msg model =
             ( { model | selectedEvent = Nothing }, Cmd.none )
         CloseEventInfo ->
             ( { model | selectedEvent = Nothing }, Cmd.none )
+        InsertMode ->
+            ( { model | insertMode = True }, Cmd.none )
+        CancelInsertMode ->
+            ( { model | insertMode = False, inserting = Nothing, insertedDetails = Nothing }, Cmd.none )
+        Inserting lngLat ->
+            ( { model | inserting = Just lngLat }, Cmd.none )
+        InsertedDetails details ->
+            ( { model | insertedDetails = Just details }, Cmd.none )
+        SubmitInsert ->
+            case ( model.inserting , model.insertedDetails ) of
+                ( Just point, Just details ) -> ( { model | insertMode = False, inserting = Nothing, insertedDetails = Nothing }, Requests.postEvent point "Anonymous" details (wrapMsg << GotEvents))        
+                _ -> ( model, Cmd.none )
+        GotAbout (Ok about) ->
+            ( { model | about = about }, Cmd.none )
+        GotAbout (Err _) ->
+            ( model, Cmd.none )
 
 hoveredFeatures : List Json.Encode.Value -> MapboxAttr msg
 hoveredFeatures =
@@ -114,27 +140,62 @@ view mode model =
     let content = case mode of
             Regions -> viewRegionInfo CloseRegionInfo model.selectedRegion
             Events -> viewEventInfo CloseEventInfo model.selectedEvent
-            _ -> div [] []
+            About -> Html.div Styles.Attributes.about
+                         [ Html.p [] [ Html.text model.about ]
+                         ]
+
+        insertButton = if model.insertMode
+                        then Html.button (Styles.Attributes.insertButton
+                                ++ [Html.Events.onClick CancelInsertMode])
+                                [ text "Cancel" ]
+                        else Html.button (Styles.Attributes.insertButton
+                                ++ [Html.Events.onClick InsertMode])
+                                [ text "Add Event" ]
+
+        floating = if model.insertMode
+            then case model.inserting of
+                Just _ -> [div Styles.Attributes.eventInfo
+                    [ Html.h2 [] [ text "Anonymous" ] 
+                    , Html.textarea (Styles.Attributes.inputForm
+                                     ++ [Html.Attributes.placeholder "Details"
+                                        , Html.Events.onInput InsertedDetails
+                                        ])
+                                     []
+                    , Html.button (Styles.Attributes.closeButton
+                                      ++ [Html.Events.onClick CancelInsertMode])
+                                      [ text "X" ]
+                    , Html.button (Styles.Attributes.insertingSubmit
+                                      ++ [ Html.Attributes.disabled <|
+                                            model.insertedDetails == Nothing ||
+                                            model.insertedDetails == Just ""
+                                         , Html.Events.onClick SubmitInsert])
+                                      [ text "Submit" ]
+                    ]]
+                Nothing -> [ insertButton
+                           , content
+                           ]
+            else    [ insertButton
+                    , content
+                    ]
     in
     div []
-        [ viewMap mode model
-        , content
-        ]
+        (viewMap mode model
+        :: floating)
 
 viewMap : Mode -> Model -> Html Msg
 viewMap mode model = 
     let modeLayers = case mode of
             Regions -> layersFromRegions model.regions
             Events -> layersFromEvents model.events
-            Clear -> []
+            _ -> []
         modeListenLayers = case mode of
             Regions -> listenLayersFromRegions model.regions
             Events -> listenLayersFromEvents model.events
-            Clear -> []
+            _ -> []
         modeSources = case mode of
             Regions -> sourcesFromRegions model.regions
             Events -> sourcesFromEvents model.events
-            Clear -> []
+            _ -> []
     in
     div Styles.Attributes.map
             [map

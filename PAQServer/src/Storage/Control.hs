@@ -5,6 +5,7 @@ module Storage.Control
     ,   selectRegion
     ,   selectEvents
     ,   selectEvent
+    ,   insertEvent
     ,   fill
     ,   refill
     ) where
@@ -72,3 +73,13 @@ selectEvent db eventId = do
     case events of
         [] -> return Nothing
         (e:_) -> return $ Just e
+
+insertEvent :: Connection -> InsertEvent -> IO ()
+insertEvent db event = executeNamed db 
+        "INSERT INTO events (lng, lat, creator, description) \
+        \VALUES (:lng, :lat, :creator, :description)" 
+        [ ":lng" := insert_event_lng event
+        , ":lat" := insert_event_lat event
+        , ":creator" := insert_event_creator event
+        , ":description" := insert_event_description event
+        ]

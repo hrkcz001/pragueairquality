@@ -1,25 +1,15 @@
 module Region exposing (..)
 
-import Browser
-import Http
-import Html exposing (div, text, Html)
-import Html.Attributes exposing (style)
-import Html.Events 
 import Json.Decode
 import Json.Encode
-import Styles.Attributes
-import LngLat exposing (LngLat)
-import Mapbox.Cmd.Option as Opt
-import Mapbox.Element exposing (..)
-import Mapbox.Expression as E exposing (false, float, int, str, true)
+import Mapbox.Source as Source
 import Mapbox.Layer as Layer
-import Mapbox.Source as Source
-import Mapbox.Style as Style exposing (Style(..))
-import Mapbox.Source as Source
-import Mapbox.Expression exposing (Color)
+import Mapbox.Expression as E
+import Html exposing (Html)
+import Html.Events
+import LngLat exposing (LngLat)
 
-import Styles.Streets exposing (styleLayers)
-import Requests
+import Styles.Attributes
 
 type alias Region =
     { name : String
@@ -67,7 +57,7 @@ sourcesFromRegions regions =
     regions
     |> List.map (\region -> Source.geoJSONFromValue region.name [Source.generateIds] (regionToSource region))
 
-colorFromLevel : Int -> E.Expression msg Color
+colorFromLevel : Int -> E.Expression msg E.Color
 colorFromLevel level = case level of
     1 -> E.rgba 0 255 0 1
     2 -> E.rgba 255 255 0 1
@@ -81,9 +71,9 @@ layersFromRegions regions =
         [   Layer.fillColor (colorFromLevel region.level)
         ,   Layer.fillOutlineColor (E.rgba 0 0 0 255)
         ,   Layer.fillOpacity 
-            (E.ifElse (E.toBool (E.featureState (str "hover"))) 
-                (float 0.6) 
-                (float 0.3)
+            (E.ifElse (E.toBool (E.featureState (E.str "hover"))) 
+                (E.float 0.6) 
+                (E.float 0.3)
             )
         ]
     ) regions
@@ -95,11 +85,11 @@ listenLayersFromRegions regions =
 viewRegionInfo : msg -> Maybe RegionInfo -> Html msg
 viewRegionInfo mapMsg regionInfo = 
     case regionInfo of
-                    Just info -> div Styles.Attributes.regionInfo
-                                 [ Html.h2 [] [ text info.name ]
-                                 , Html.h3 [] [ text info.status ]
-                                 , Html.p [] [ text info.description ]
+                    Just info -> Html.div Styles.Attributes.regionInfo
+                                 [ Html.h2 [] [ Html.text info.name ]
+                                 , Html.h3 [] [ Html.text info.status ]
+                                 , Html.p [] [ Html.text info.description ]
                                  , Html.button (Styles.Attributes.closeButton ++
-                                     [ Html.Events.onClick mapMsg ]) [text "X"]
+                                     [ Html.Events.onClick mapMsg ]) [Html.text "X"]
                                  ]
                     Nothing ->  Html.div [] []

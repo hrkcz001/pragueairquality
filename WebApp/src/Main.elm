@@ -7,7 +7,6 @@ import Url.Parser as UrlParser
 import Html
 
 import Html.Events exposing (onClick)
-import Json.Decode as Json
 
 import Map
 import Styles.Attributes
@@ -38,7 +37,6 @@ type Msg
 type Route
     = Regions
     | Events
-    | Clear
     | About
     | NotFound
 
@@ -152,13 +150,8 @@ view model =
                     <| Map.view Map.Events model.mapModel
 
                 About ->
-                    Html.div []
-                    [ Html.h1 [] [ Html.text "About" ]
-                    ]
-
-                Clear ->
                     Html.map MapMsg
-                    <| Map.view Map.Clear model.mapModel
+                    <| Map.view Map.About model.mapModel
 
                 NotFound ->
                     Html.div []

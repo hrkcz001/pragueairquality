@@ -8,24 +8,14 @@ module Styles.Attributes exposing
     , header
     , entry
     , active
-    , addDebt
-    , content
-    , dropdown
-    , input
-    , label
-    , person
-    , personDetail
-    , personLink
-    , personList
-    , textarea
+    , insertButton
+    , inputForm
+    , insertingSubmit
+    , about
     )
 
 import Html exposing (Attribute)
 import Html.Attributes as Attributes
-
-content : List (Attribute msg)
-content =
-    [ Attributes.style "display" "flex" ]
 
 map : List (Attribute msg)
 map =
@@ -99,6 +89,16 @@ closeButton =
     , Attributes.style "text-decoration" "none"
     ]
 
+insertButton : List (Attribute msg)
+insertButton =
+    [ Attributes.style "position" "absolute"
+    , Attributes.style "top" "9%"
+    , Attributes.style "right" "2%"
+    , Attributes.style "cursor" "pointer"
+    , Attributes.style "color" "#000"
+    , Attributes.style "text-decoration" "none"
+    ]
+
 regionInfo : List (Attribute msg)
 regionInfo =
     [ Attributes.style "position" "absolute"
@@ -129,71 +129,41 @@ eventInfo =
     , Attributes.style "border" "1px solid #000"
     ]
 
-personList : List (Attribute msg)
-personList =
-    [ Attributes.style "flex-basis" "15%"
-    , Attributes.style "margin" "1rem"
-    , Attributes.style "padding-right" "1rem"
-    , Attributes.style "border-right" "1px solid #000"
+inputForm : List (Attribute msg)
+inputForm =
+    [ Attributes.style "position" "absolute"
+    , Attributes.style "width" "80%"
+    , Attributes.style "height" "60%"
+    , Attributes.style "top" "25%"
+    , Attributes.style "left" "10%"
+    , Attributes.style "background-color" "#fff"
+    , Attributes.style "border" "1px solid #000"
     ]
 
-
-person : List (Attribute msg)
-person =
-    [ Attributes.style "padding" ".25rem 0" ]
-
-
-personLink : List (Attribute msg)
-personLink =
-    [ Attributes.style "color" "blue"
-    , Attributes.style "text-decoration" "underline"
+insertingSubmit : List (Attribute msg)
+insertingSubmit =
+    [ Attributes.style "position" "absolute"
+    , Attributes.style "width" "10%"
+    , Attributes.style "height" "5%"
+    , Attributes.style "top" "90%"
+    , Attributes.style "left" "45%"
     , Attributes.style "cursor" "pointer"
+    , Attributes.style "color" "#000"
+    , Attributes.style "text-decoration" "none"
     ]
 
-
-personDetail : List (Attribute msg)
-personDetail =
-    [ Attributes.style "flex-basis" "65%"
-    , Attributes.style "position" "relative"
-    ]
-
-
-addDebt : List (Attribute msg)
-addDebt =
-    [ Attributes.style "flex-basis" "20%"
-    , Attributes.style "margin" "1rem"
-    , Attributes.style "padding-left" "1rem"
-    , Attributes.style "border-left" "1px solid #000"
-    ]
-
-
-label : List (Attribute msg)
-label =
-    [ Attributes.style "display" "block"
-    , Attributes.style "font-weight" "bold"
-    , Attributes.style "margin-bottom" ".5rem"
-    ]
-
-
-dropdown : List (Attribute msg)
-dropdown =
-    [ Attributes.style "margin-bottom" "1rem"
-    ]
-
-
-input : List (Attribute msg)
-input =
-    [ Attributes.style "width" "100%"
-    , Attributes.style "padding" "0.25rem"
-    , Attributes.style "margin-bottom" "1rem"
-    ]
-
-
-textarea : List (Attribute msg)
-textarea =
-    [ Attributes.style "width" "100%"
-    , Attributes.style "padding" "0.25rem"
-    , Attributes.style "margin-bottom" "1rem"
-    , Attributes.style "resize" "vertical"
-    , Attributes.style "min-height" "5rem"
+about : List (Attribute msg)
+about =
+    [ Attributes.style "position" "absolute"
+    , Attributes.style "z-index" "2"
+    , Attributes.style "width" "70%"
+    , Attributes.style "height" "70%"
+    , Attributes.style "top" "15%"
+    , Attributes.style "left" "15%"
+    , Attributes.style "overflow" "auto"
+    , Attributes.style "white-space" "pre-wrap"
+    , Attributes.style "background-color" "FloralWhite"
+    , Attributes.style "padding" "1rem"
+    , Attributes.style "box-sizing" "border-box"
+    , Attributes.style "border" "1px solid #000"
     ]

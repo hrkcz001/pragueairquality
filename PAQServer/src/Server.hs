@@ -2,10 +2,10 @@ module Server (initHttpServer) where
 
 import Web.Scotty
 import Network.Wai.Middleware.RequestLogger
-import Control.Monad.Trans
 import Data.Text (Text)
 
 import Storage.Control
+import Storage.Types (InsertEvent(..))
 
 initHttpServer :: IO ()
 initHttpServer = do
@@ -39,33 +39,46 @@ startHandling db = scotty 3000 $ do
             "main.js" -> do
                     setHeader "Content-Type" "application/javascript"
                     file "../WebApp/dist/main.js"
+            "about.txt" -> do
+                    setHeader "Content-Type" "text/plain"
+                    file "about.txt"
             _ -> next
 
-    -- send regions {name : text, level : int, polygon : list of {lat : float, lon : float}}
+    -- send regions { name : text, level : int, polygon : list of { lat : float, lon : float } }
     get "/api/regions" $ do
-        regions <- liftIO $ Storage.Control.selectRegions db
+        regions <- liftAndCatchIO $ Storage.Control.selectRegions db
         json regions
 
-    get "/api/region/:name" $ do
+    -- send region by name { complete_name : text, status : text, description : text }
+    get "/api/regions/:name" $ do
         name <- param "name" :: ActionM Text
-        region <- liftIO $ Storage.Control.selectRegion db name
+        region <- liftAndCatchIO $ Storage.Control.selectRegion db name
         case region of
             Nothing -> raise "Region not found"
             Just r -> json r
 
+    -- select all events { id : int, lng : float, lat : float }
     get "/api/events" $ do
-        events <- liftIO $ Storage.Control.selectEvents db
+        events <- liftAndCatchIO $ Storage.Control.selectEvents db
         json events
-
-    get "/api/event/:id" $ do
+    
+    -- select event by id { creator : text, description : text }
+    get "/api/events/:id" $ do
         eventId <- param "id" :: ActionM Int
-        event <- liftIO $ Storage.Control.selectEvent db eventId
+        event <- liftAndCatchIO $ Storage.Control.selectEvent db eventId
         case event of
             Nothing -> raise "Event not found"
             Just e -> json e
+    
+    -- insert event { lng : float, lat : float, creator : text, description : text }
+    post "/api/events" $ do
+        event <- jsonData :: ActionM InsertEvent
+        liftAndCatchIO $ Storage.Control.insertEvent db event
+        events <- liftAndCatchIO $ Storage.Control.selectEvents db
+        json events
 
     -- clear and fill database with predefined data
     get "/refill" $ do
-        _ <- liftIO $ Storage.Control.refill db
+        _ <- liftAndCatchIO $ Storage.Control.refill db
         redirect "/"
 
