@@ -9,7 +9,8 @@ module Styles.Attributes exposing
     , entry
     , active
     , insertButton
-    , inputForm
+    , inputName
+    , inputDetails
     , insertingSubmit
     , about
     )
@@ -129,12 +130,23 @@ eventInfo =
     , Attributes.style "border" "1px solid #000"
     ]
 
-inputForm : List (Attribute msg)
-inputForm =
+inputDetails : List (Attribute msg)
+inputDetails =
     [ Attributes.style "position" "absolute"
     , Attributes.style "width" "80%"
     , Attributes.style "height" "60%"
     , Attributes.style "top" "25%"
+    , Attributes.style "left" "10%"
+    , Attributes.style "background-color" "#fff"
+    , Attributes.style "border" "1px solid #000"
+    ]
+
+inputName : List (Attribute msg)
+inputName =
+    [ Attributes.style "position" "absolute"
+    , Attributes.style "width" "30%"
+    , Attributes.style "height" "5%"
+    , Attributes.style "top" "5%"
     , Attributes.style "left" "10%"
     , Attributes.style "background-color" "#fff"
     , Attributes.style "border" "1px solid #000"
@@ -157,8 +169,8 @@ about =
     [ Attributes.style "position" "absolute"
     , Attributes.style "z-index" "2"
     , Attributes.style "width" "70%"
-    , Attributes.style "height" "70%"
-    , Attributes.style "top" "15%"
+    , Attributes.style "height" "60%"
+    , Attributes.style "top" "20%"
     , Attributes.style "left" "15%"
     , Attributes.style "overflow" "auto"
     , Attributes.style "white-space" "pre-wrap"

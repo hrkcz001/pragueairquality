@@ -11,7 +11,7 @@ import Html.Events exposing (onClick)
 import Map
 import Styles.Attributes
 
-main : Program Flags Model Msg
+main : Program () Model Msg
 main =
     Browser.application
         { init = init
@@ -40,9 +40,6 @@ type Route
     | About
     | NotFound
 
-type alias Flags =
-    Maybe String
-
 routeParser : UrlParser.Parser (Route -> a) a
 routeParser =
     UrlParser.oneOf
@@ -55,8 +52,8 @@ toRoute : Url.Url -> Route
 toRoute url =
     Maybe.withDefault NotFound (UrlParser.parse routeParser url)
 
-init : Flags -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
-init token url key =
+init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
+init _ url key =
     let
         route =
             toRoute url
