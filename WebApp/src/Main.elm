@@ -35,7 +35,8 @@ type Msg
     | GoTo String
 
 type Route
-    = Map
+    = Regions
+    | Clear
     | Test
     | NotFound
 
@@ -45,7 +46,7 @@ type alias Flags =
 routeParser : UrlParser.Parser (Route -> a) a
 routeParser =
     UrlParser.oneOf
-        [ UrlParser.map Map (UrlParser.s "map")
+        [ UrlParser.map Regions (UrlParser.s "map")
         , UrlParser.map Test (UrlParser.s "test")
         ]
 
@@ -59,14 +60,14 @@ init token url key =
         route =
             toRoute url
         ( mapModel, mapCmd ) =
-            Map.init
+            Map.init MapMsg
     in
     ( { key = key
       , route = route
       , mapModel = mapModel
       }
     , Cmd.batch
-        [ Cmd.map MapMsg mapCmd
+        [ mapCmd
         ]
     )
 
@@ -107,9 +108,13 @@ view model =
     let
         content =
             case model.route of
-                Map ->
-                    Map.view model.mapModel
-                    |> Html.map MapMsg
+                Regions ->
+                    Html.map MapMsg
+                    <| Map.view Map.Regions model.mapModel
+
+                Clear ->
+                    Html.map MapMsg
+                    <| Map.view Map.Clear model.mapModel
 
                 Test ->
                     Html.div  [ onClick <| GoTo "/map"
