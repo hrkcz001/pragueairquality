@@ -4,6 +4,7 @@ module Storage.Types
     ,   LngLat(..)
     ,   RegionInfo(..)
     ,   Event(..)
+    ,   EventInfo(..)
     ) where
 
 import GHC.Generics
@@ -26,34 +27,41 @@ instance FromRow RegionInfo where
     fromRow = RegionInfo <$> field <*> field <*> field
 
 instance FromRow Event where
-    fromRow = Event <$> field <*> field <*> field <*> field <*> field
+    fromRow = Event <$> field <*> field <*> field
+
+instance FromRow EventInfo where
+    fromRow = EventInfo <$> field <*> field
 
 instance ToJSON LngLat
 instance ToJSON Region
 instance ToJSON RegionInfo
 instance ToJSON Event
+instance ToJSON EventInfo
 
 data LngLat = LngLat {
-    lng :: Float,
-    lat :: Float
+    point_lng :: Float,
+    point_lat :: Float
 } deriving (Show, Generic)
 
 data Region = Region {
-    name :: String,
-    level :: Int,
-    polygon :: [LngLat]
+    region_name :: String,
+    region_level :: Int,
+    region_polygon :: [LngLat]
 } deriving (Show, Generic)
 
 data RegionInfo = RegionInfo {
-    complete_name :: String,
-    status :: String,
-    description :: String
+    region_complete_name :: String,
+    region_status :: String,
+    region_description :: String
 } deriving (Show, Generic)
 
 data Event = Event {
     event_id :: Int,
     event_lng :: Float,
-    event_lat :: Float,
-    creator :: String,
+    event_lat :: Float
+} deriving (Show, Generic)
+
+data EventInfo = EventInfo {
+    event_creator :: String,
     event_description :: String
 } deriving (Show, Generic)

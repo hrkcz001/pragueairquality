@@ -4,6 +4,7 @@ module Storage.Control
     ,   selectRegions
     ,   selectRegion
     ,   selectEvents
+    ,   selectEvent
     ,   fill
     ,   refill
     ) where
@@ -59,5 +60,15 @@ selectRegion db regionName = do
 
 selectEvents :: Connection -> IO [Event]
 selectEvents db = query_ db 
-    "SELECT e.id, e.lng, e.lat, e.creator, e.description \
+    "SELECT e.id, e.lng, e.lat \
     \FROM events e"
+
+selectEvent :: Connection -> Int -> IO (Maybe EventInfo)
+selectEvent db eventId = do
+    events <- queryNamed db 
+        "SELECT e.creator, e.description \
+        \FROM events e \
+        \WHERE e.id = :x" [":x" := eventId]
+    case events of
+        [] -> return Nothing
+        (e:_) -> return $ Just e

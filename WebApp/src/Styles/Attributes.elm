@@ -1,6 +1,7 @@
 module Styles.Attributes exposing
     ( map
     , regionInfo
+    , eventInfo
     , closeButton
     , titleName
     , headerBackground
@@ -111,6 +112,21 @@ regionInfo =
     , Attributes.style "padding" "1rem"
     , Attributes.style "box-sizing" "border-box"
     , Attributes.style "border-right" "1px solid #000"
+    ]
+
+eventInfo : List (Attribute msg)
+eventInfo =
+    [ Attributes.style "position" "absolute"
+    , Attributes.style "z-index" "2"
+    , Attributes.style "width" "60%"
+    , Attributes.style "height" "60%"
+    , Attributes.style "top" "20%"
+    , Attributes.style "left" "20%"
+    , Attributes.style "overflow" "auto"
+    , Attributes.style "background-color" "FloralWhite"
+    , Attributes.style "padding" "1rem"
+    , Attributes.style "box-sizing" "border-box"
+    , Attributes.style "border" "1px solid #000"
     ]
 
 personList : List (Attribute msg)

@@ -24,10 +24,11 @@ import Region exposing (..)
 import Event exposing (..)
 
 type alias Model =
-    { regions : List Region
-    , features : List Json.Encode.Value
+    { features : List Json.Encode.Value
+    , regions : List Region
     , selectedRegion : Maybe RegionInfo
     , events : List Event
+    , selectedEvent : Maybe EventInfo
     }
 
 type Mode = Regions
@@ -38,12 +39,14 @@ type Msg = Hover EventData
          | Click EventData
          | GotRegions (Result Http.Error (List Region))
          | GotRegion (Result Http.Error RegionInfo)
-         | CloseInfo
+         | CloseRegionInfo
          | GotEvents (Result Http.Error (List Event))
+         | GotEvent (Result Http.Error EventInfo)
+         | CloseEventInfo
 
 init : ( Msg -> msg ) -> ( Model, Cmd msg )
 init wrapMsg =
-    ({ regions = [], features = [], selectedRegion = Nothing, events = []}, Cmd.batch [ Requests.getRegions (wrapMsg << GotRegions)
+    ({ features = [], regions = [], selectedRegion = Nothing, events = [], selectedEvent = Nothing }, Cmd.batch [ Requests.getRegions (wrapMsg << GotRegions)
                                                                          , Requests.getEvents (wrapMsg << GotEvents)
                                                                          ])
 
@@ -59,16 +62,26 @@ update wrapMsg msg model =
 
         Click { lngLat, renderedFeatures } ->
             let _ = Debug.log "pos" ("lng: " ++ (String.fromFloat lngLat.lng) ++ ", lat: " ++ (String.fromFloat lngLat.lat))
-                regionName= renderedFeatures
+                feature = renderedFeatures
                     |> List.head
                     |> Maybe.withDefault Json.Encode.null
                     |> Json.Decode.decodeValue featureName
                     |> Result.withDefault ""
-                newSelectedRegion = case regionName of
-                    "" -> Cmd.none
-                    _ -> Requests.getRegionInfo regionName (wrapMsg << GotRegion)
+                    |> String.split "."
+
+                ( featType, featName ) = case feature of
+                    [a, b] -> (a, b)
+                    _ -> ("", "")
+                cmd = case featType of
+                        "region" -> case featName of
+                                "" -> Cmd.none
+                                _ -> Requests.getRegionInfo featName (wrapMsg << GotRegion)
+                        "event" -> case featName of
+                                "" -> Cmd.none
+                                _ -> Requests.getEventInfo featName (wrapMsg << GotEvent)
+                        _ -> Cmd.none
             in
-            ( model, newSelectedRegion )
+            ( model, cmd )
                 
         GotRegions (Ok regions) ->
             ( { model | regions = regions }, Cmd.none )
@@ -78,12 +91,18 @@ update wrapMsg msg model =
             ( { model | selectedRegion = Just regionInfo }, Cmd.none )
         GotRegion (Err _) ->
             ( { model | selectedRegion = Nothing }, Cmd.none )
-        CloseInfo ->
+        CloseRegionInfo ->
             ( { model | selectedRegion = Nothing }, Cmd.none )
         GotEvents (Ok events) ->
             ( { model | events = events }, Cmd.none )
         GotEvents (Err _) ->
             ( model, Cmd.none )
+        GotEvent (Ok eventInfo) ->
+            ( { model | selectedEvent = Just eventInfo }, Cmd.none )
+        GotEvent (Err _) ->
+            ( { model | selectedEvent = Nothing }, Cmd.none )
+        CloseEventInfo ->
+            ( { model | selectedEvent = Nothing }, Cmd.none )
 
 hoveredFeatures : List Json.Encode.Value -> MapboxAttr msg
 hoveredFeatures =
@@ -93,7 +112,8 @@ hoveredFeatures =
 view : Mode -> Model -> Html Msg
 view mode model =
     let content = case mode of
-            Regions -> viewRegionInfo CloseInfo model.selectedRegion
+            Regions -> viewRegionInfo CloseRegionInfo model.selectedRegion
+            Events -> viewEventInfo CloseEventInfo model.selectedEvent
             _ -> div [] []
     in
     div []

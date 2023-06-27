@@ -1,12 +1,17 @@
-module Event exposing (Event, sourcesFromEvents, layersFromEvents, listenLayersFromEvents)
+module Event exposing (Event, EventInfo, sourcesFromEvents, layersFromEvents, listenLayersFromEvents, viewEventInfo)
 
 import Json.Decode
 import Json.Encode
 import Mapbox.Source as Source
 import Mapbox.Layer as Layer
 import Mapbox.Expression as E
+import Html exposing (Html)
+import Html.Events
 
-type alias Event = { id : String, lng : Float, lat : Float, creator : String, description : String }
+import Styles.Attributes
+
+type alias Event = { id : String, lng : Float, lat : Float }
+type alias EventInfo = { creator : String, description : String }
 
 sourcesFromEvents : List Event -> List Source.Source
 sourcesFromEvents events =
@@ -15,7 +20,7 @@ sourcesFromEvents events =
             {
               "type": "Feature",
               "properties": {
-                "name": \"""" ++ event.id ++ """\"
+                "name": \"event.""" ++ event.id ++ """\"
               },
               "geometry": {
                 "type": "Point",
@@ -40,7 +45,7 @@ sourcesFromEvents events =
 layersFromEvents : List Event -> List Layer.Layer
 layersFromEvents events = 
     List.map (\event -> 
-        Layer.circle event.id
+        Layer.circle ("event." ++ event.id)
         "events"
         [   Layer.circleRadius (E.float 10)
         ,   Layer.circleColor (E.rgba 0 150 255 255)
@@ -48,12 +53,25 @@ layersFromEvents events =
         ,   Layer.circleStrokeWidth (E.float 1)
         ,   Layer.circleOpacity 
             (E.ifElse (E.toBool (E.featureState (E.str "hover"))) 
-                (E.float 0.6) 
-                (E.float 0.3)
+                (E.float 0.7) 
+                (E.float 0.2)
             )
         ]
     ) events
 
 listenLayersFromEvents : List Event -> List String
 listenLayersFromEvents events = 
-    List.map (\event -> event.id) events
+    List.map (\event -> "event." ++ event.id) events
+
+viewEventInfo : msg -> Maybe EventInfo -> Html msg
+viewEventInfo mapMsg eventInfo = 
+    case eventInfo of
+        Nothing -> Html.div [] []
+        Just info ->
+            Html.div Styles.Attributes.eventInfo
+                [ Html.h2 [] [ Html.text info.creator ]
+                , Html.p [] [ Html.text info.description ]
+                , Html.button (Styles.Attributes.closeButton
+                                ++ [ Html.Events.onClick mapMsg ])    
+                        [ Html.text "X" ]
+                ]

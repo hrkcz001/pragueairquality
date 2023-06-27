@@ -42,22 +42,30 @@ startHandling db = scotty 3000 $ do
             _ -> next
 
     -- send regions {name : text, level : int, polygon : list of {lat : float, lon : float}}
-    get "/regions" $ do
+    get "/api/regions" $ do
         regions <- liftIO $ Storage.Control.selectRegions db
         json regions
 
-    get "/region/:name" $ do
+    get "/api/region/:name" $ do
         name <- param "name" :: ActionM Text
         region <- liftIO $ Storage.Control.selectRegion db name
         case region of
             Nothing -> raise "Region not found"
             Just r -> json r
 
-    get "/currentEvents" $ do
+    get "/api/events" $ do
         events <- liftIO $ Storage.Control.selectEvents db
         json events
+
+    get "/api/event/:id" $ do
+        eventId <- param "id" :: ActionM Int
+        event <- liftIO $ Storage.Control.selectEvent db eventId
+        case event of
+            Nothing -> raise "Event not found"
+            Just e -> json e
 
     -- clear and fill database with predefined data
     get "/refill" $ do
         _ <- liftIO $ Storage.Control.refill db
         redirect "/"
+

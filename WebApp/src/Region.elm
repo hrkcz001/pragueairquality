@@ -50,7 +50,7 @@ sourcesFromRegions regions =
                 {
                   "type": "Feature",
                   "properties": {
-                    "name": \"""" ++ region.name ++ """\"
+                    "name": \"region.""" ++ region.name ++ """\"
                   },
                   "geometry": {
                     "type": "Polygon",
@@ -73,22 +73,10 @@ colorFromLevel level = case level of
     2 -> E.rgba 255 255 0 1
     _ -> E.rgba 255 0 0 1
 
-viewRegionInfo : msg -> Maybe RegionInfo -> Html msg
-viewRegionInfo mapMsg regionInfo = 
-    case regionInfo of
-                    Just info -> div Styles.Attributes.regionInfo
-                                 [ Html.h2 [] [ text info.name ]
-                                 , Html.h3 [] [ text info.status ]
-                                 , Html.p [] [ text info.description ]
-                                 , Html.button (Styles.Attributes.closeButton ++
-                                     [ Html.Events.onClick mapMsg ]) [text "X"]
-                                 ]
-                    Nothing ->  Html.div [] []
-
 layersFromRegions : List Region -> List Layer.Layer
 layersFromRegions regions = 
     List.map (\region -> 
-        Layer.fill region.name
+        Layer.fill ("region." ++ region.name)
         region.name
         [   Layer.fillColor (colorFromLevel region.level)
         ,   Layer.fillOutlineColor (E.rgba 0 0 0 255)
@@ -102,4 +90,16 @@ layersFromRegions regions =
 
 listenLayersFromRegions : List Region -> List String
 listenLayersFromRegions regions = 
-    List.map (\region -> region.name) regions
+    List.map (\region -> "region." ++ region.name) regions
+
+viewRegionInfo : msg -> Maybe RegionInfo -> Html msg
+viewRegionInfo mapMsg regionInfo = 
+    case regionInfo of
+                    Just info -> div Styles.Attributes.regionInfo
+                                 [ Html.h2 [] [ text info.name ]
+                                 , Html.h3 [] [ text info.status ]
+                                 , Html.p [] [ text info.description ]
+                                 , Html.button (Styles.Attributes.closeButton ++
+                                     [ Html.Events.onClick mapMsg ]) [text "X"]
+                                 ]
+                    Nothing ->  Html.div [] []
