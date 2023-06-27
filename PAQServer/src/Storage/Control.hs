@@ -3,16 +3,19 @@ module Storage.Control
     ,   Connection
     ,   selectRegions
     ,   selectRegion
+    ,   selectEvents
     ,   fill
     ,   refill
     ) where
+
+import Database.SQLite.Simple
+import qualified Data.Text as T
 
 import Storage.Types
 import Storage.Schema
 import qualified Storage.Fill.Regions
 import qualified Storage.Fill.Coords
-import qualified Data.Text as T
-import Database.SQLite.Simple
+import qualified Storage.Fill.Events
 
 -- | Initialize database
 initDb :: IO Connection
@@ -26,6 +29,7 @@ fill :: Connection -> IO ()
 fill db = do
     Storage.Fill.Regions.fill db
     Storage.Fill.Coords.fill db
+    Storage.Fill.Events.fill db
 
 -- | Clear and fill database with predefined data
 refill :: Connection -> IO ()
@@ -52,3 +56,8 @@ selectRegion db regionName = do
     case regions of
         [] -> return Nothing
         (r:_) -> return $ Just r
+
+selectEvents :: Connection -> IO [Event]
+selectEvents db = query_ db 
+    "SELECT e.id, e.lng, e.lat, e.creator, e.description \
+    \FROM events e"

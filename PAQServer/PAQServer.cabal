@@ -16,6 +16,7 @@ library
       Server
       Storage.Control
       Storage.Fill.Coords
+      Storage.Fill.Events
       Storage.Fill.Regions
       Storage.Schema
       Storage.Types

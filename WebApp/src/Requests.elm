@@ -1,4 +1,4 @@
-module Requests exposing (getRegions, getRegionInfo)
+module Requests exposing (getRegions, getRegionInfo, getEvents)
 
 import Http
 import Json.Decode
@@ -15,6 +15,27 @@ getRegions msg =
         , timeout = Just 10000
         , tracker = Nothing
         }
+
+getEvents : (Result Http.Error (List { id : String, lng : Float, lat : Float, creator : String, description : String }) -> msg) -> Cmd msg
+getEvents msg =
+    Http.request
+        { method = "GET"
+        , headers = []
+        , url = "currentEvents"
+        , body = Http.emptyBody
+        , expect = Http.expectJson msg (Json.Decode.list eventDecoder)
+        , timeout = Just 10000
+        , tracker = Nothing
+        }
+
+eventDecoder : Json.Decode.Decoder { id : String, lng : Float, lat : Float, creator : String, description : String }
+eventDecoder =
+    Json.Decode.map5 (\id lng lat creator description -> { id = (String.fromInt id), lng = lng, lat = lat, creator = creator, description = description })
+        (Json.Decode.field "event_id" Json.Decode.int)
+        (Json.Decode.field "event_lng" Json.Decode.float)
+        (Json.Decode.field "event_lat" Json.Decode.float)
+        (Json.Decode.field "creator" Json.Decode.string)
+        (Json.Decode.field "event_description" Json.Decode.string)
 
 regionDecoder : Json.Decode.Decoder ({ name : String, level : Int, polygon : List LngLat })
 regionDecoder =

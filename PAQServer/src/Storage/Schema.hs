@@ -19,10 +19,18 @@ form db = do
                         \status TEXT NOT NULL, \
                         \description TEXT NOT NULL, \
                         \level INTEGER NOT NULL CHECK (level >= 0))"
+            execute_ db "CREATE TABLE IF NOT EXISTS events ( \
+                        \id INTEGER PRIMARY KEY AUTOINCREMENT, \
+                        \lng REAL, \
+                        \lat REAL, \
+                        \creator TEXT NOT NULL, \
+                        \description TEXT NOT NULL, \
+                        \UNIQUE (lng, lat))"
 
 -- | Drop tables and create them again
 recreate :: Connection -> IO ()
 recreate db = do
                 execute_ db "DROP TABLE IF EXISTS points"
                 execute_ db "DROP TABLE IF EXISTS regions"
+                execute_ db "DROP TABLE IF EXISTS events"
                 form db

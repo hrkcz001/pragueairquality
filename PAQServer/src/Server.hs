@@ -53,6 +53,10 @@ startHandling db = scotty 3000 $ do
             Nothing -> raise "Region not found"
             Just r -> json r
 
+    get "/currentEvents" $ do
+        events <- liftIO $ Storage.Control.selectEvents db
+        json events
+
     -- clear and fill database with predefined data
     get "/refill" $ do
         _ <- liftIO $ Storage.Control.refill db

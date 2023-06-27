@@ -21,11 +21,13 @@ import Mapbox.Expression exposing (Color)
 import Styles.Streets exposing (styleLayers)
 import Requests
 import Region exposing (..)
+import Event exposing (..)
 
 type alias Model =
     { regions : List Region
     , features : List Json.Encode.Value
     , selectedRegion : Maybe RegionInfo
+    , events : List Event
     }
 
 type Mode = Regions
@@ -37,10 +39,13 @@ type Msg = Hover EventData
          | GotRegions (Result Http.Error (List Region))
          | GotRegion (Result Http.Error RegionInfo)
          | CloseInfo
+         | GotEvents (Result Http.Error (List Event))
 
 init : ( Msg -> msg ) -> ( Model, Cmd msg )
 init wrapMsg =
-    ({ regions = [], features = [], selectedRegion = Nothing}, Requests.getRegions (wrapMsg << GotRegions))
+    ({ regions = [], features = [], selectedRegion = Nothing, events = []}, Cmd.batch [ Requests.getRegions (wrapMsg << GotRegions)
+                                                                         , Requests.getEvents (wrapMsg << GotEvents)
+                                                                         ])
 
 featureName : Json.Decode.Decoder String
 featureName =
@@ -75,6 +80,10 @@ update wrapMsg msg model =
             ( { model | selectedRegion = Nothing }, Cmd.none )
         CloseInfo ->
             ( { model | selectedRegion = Nothing }, Cmd.none )
+        GotEvents (Ok events) ->
+            ( { model | events = events }, Cmd.none )
+        GotEvents (Err _) ->
+            ( model, Cmd.none )
 
 hoveredFeatures : List Json.Encode.Value -> MapboxAttr msg
 hoveredFeatures =
@@ -96,15 +105,15 @@ viewMap : Mode -> Model -> Html Msg
 viewMap mode model = 
     let modeLayers = case mode of
             Regions -> layersFromRegions model.regions
-            Events -> []
+            Events -> layersFromEvents model.events
             Clear -> []
         modeListenLayers = case mode of
             Regions -> listenLayersFromRegions model.regions
-            Events -> []
+            Events -> listenLayersFromEvents model.events
             Clear -> []
         modeSources = case mode of
             Regions -> sourcesFromRegions model.regions
-            Events -> []
+            Events -> sourcesFromEvents model.events
             Clear -> []
     in
     div Styles.Attributes.map
