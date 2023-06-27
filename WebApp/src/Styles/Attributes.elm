@@ -2,6 +2,11 @@ module Styles.Attributes exposing
     ( map
     , regionInfo
     , closeButton
+    , titleName
+    , headerBackground
+    , header
+    , entry
+    , active
     , addDebt
     , content
     , dropdown
@@ -24,11 +29,62 @@ content =
 map : List (Attribute msg)
 map =
     [ Attributes.style "position" "absolute"
+    , Attributes.style "z-index" "0"
     , Attributes.style "width" "100%"
     , Attributes.style "height" "93%"
     , Attributes.style "top" "7%"
     , Attributes.style "left" "0%"
     , Attributes.style "overflow" "hidden"
+    ]
+
+headerBackground : List (Attribute msg)
+headerBackground =
+    [ Attributes.style "position" "absolute"
+    , Attributes.style "z-index" "0"
+    , Attributes.style "width" "100%"
+    , Attributes.style "height" "7%"
+    , Attributes.style "top" "0%"
+    , Attributes.style "left" "0%"
+    , Attributes.style "background-color" "ghostwhite"
+    , Attributes.style "box-sizing" "border-box"
+    , Attributes.style "border-bottom" "1px solid #000"
+    ]
+
+titleName : List (Attribute msg)
+titleName =
+    [ Attributes.style "position" "absolute"
+    , Attributes.style "z-index" "1"
+    , Attributes.style "top" "0%"
+    , Attributes.style "left" "0%"
+    , Attributes.style "cursor" "pointer"
+    , Attributes.style "color" "darkcyan"
+    , Attributes.style "padding" "0.5rem"
+    , Attributes.style "font-size" "2.125rem"
+    ]
+
+header : List (Attribute msg)
+header =
+    [ Attributes.style "position" "absolute"
+    , Attributes.style "text-align" "center"
+    , Attributes.style "display" "table"
+    , Attributes.style "z-index" "1"
+    , Attributes.style "width" "50%"
+    , Attributes.style "height" "7%"
+    , Attributes.style "top" "0%"
+    , Attributes.style "left" "25%"
+    ]
+
+entry : List (Attribute msg)
+entry =
+    [ Attributes.style "display" "table-cell"
+    , Attributes.style "cursor" "pointer"
+    , Attributes.style "vertical-align" "middle"
+    ]
+
+active : List (Attribute msg)
+active =
+    [ Attributes.style "text-decoration" "underline"
+    , Attributes.style "color" "darkgreen"
     ]
 
 closeButton : List (Attribute msg)
@@ -45,12 +101,13 @@ closeButton =
 regionInfo : List (Attribute msg)
 regionInfo =
     [ Attributes.style "position" "absolute"
+    , Attributes.style "z-index" "2"
     , Attributes.style "width" "20%"
-    , Attributes.style "height" "100%"
-    , Attributes.style "top" "0%"
+    , Attributes.style "height" "93%"
+    , Attributes.style "top" "7%"
     , Attributes.style "left" "0%"
     , Attributes.style "overflow" "auto"
-    , Attributes.style "background-color" "#fff"
+    , Attributes.style "background-color" "FloralWhite"
     , Attributes.style "padding" "1rem"
     , Attributes.style "box-sizing" "border-box"
     , Attributes.style "border-right" "1px solid #000"

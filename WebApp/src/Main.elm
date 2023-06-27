@@ -10,6 +10,7 @@ import Html.Events exposing (onClick)
 import Json.Decode as Json
 
 import Map
+import Styles.Attributes
 
 main : Program Flags Model Msg
 main =
@@ -36,8 +37,9 @@ type Msg
 
 type Route
     = Regions
+    | Events
     | Clear
-    | Test
+    | About
     | NotFound
 
 type alias Flags =
@@ -47,7 +49,8 @@ routeParser : UrlParser.Parser (Route -> a) a
 routeParser =
     UrlParser.oneOf
         [ UrlParser.map Regions (UrlParser.s "map")
-        , UrlParser.map Test (UrlParser.s "test")
+        , UrlParser.map Events (UrlParser.s "events")
+        , UrlParser.map About (UrlParser.s "about")
         ]
 
 toRoute : Url.Url -> Route
@@ -106,23 +109,62 @@ update msg model =
 view : Model -> Document Msg
 view model =
     let
+        defaultStyles = { map = Styles.Attributes.entry
+                        , events = Styles.Attributes.entry
+                        , about = Styles.Attributes.entry
+                        }
+        entryStyles =
+            case model.route of
+                Regions ->
+                    { defaultStyles | map = Styles.Attributes.entry ++ Styles.Attributes.active }
+                Events ->
+                    { defaultStyles | events = Styles.Attributes.entry ++ Styles.Attributes.active }
+                About ->
+                    { defaultStyles | about = Styles.Attributes.entry ++ Styles.Attributes.active }
+                _ ->
+                    defaultStyles
+        header =
+            Html.div []
+            [ Html.div Styles.Attributes.headerBackground []
+            , Html.div (Styles.Attributes.titleName
+                       ++ [onClick <| GoTo "/map"])
+                [ Html.text "Prague Air Quality" ]
+            , Html.div Styles.Attributes.header
+                [ Html.div  (entryStyles.map  
+                        ++ [onClick <| GoTo "/map"] )
+                        [ Html.text "Map" ]
+                , Html.div  (entryStyles.events
+                        ++ [onClick <| GoTo "/events"] )
+                        [ Html.text "Events" ]
+                , Html.div  (entryStyles.about
+                        ++ [onClick <| GoTo "/about"] )
+                        [ Html.text "About" ]
+                ]
+            ]
         content =
             case model.route of
                 Regions ->
                     Html.map MapMsg
                     <| Map.view Map.Regions model.mapModel
 
+                Events ->
+                    Html.map MapMsg
+                    <| Map.view Map.Events model.mapModel
+
+                About ->
+                    Html.div []
+                    [ Html.h1 [] [ Html.text "About" ]
+                    ]
+
                 Clear ->
                     Html.map MapMsg
                     <| Map.view Map.Clear model.mapModel
 
-                Test ->
-                    Html.div  [ onClick <| GoTo "/map"
-                              ] [ Html.text "Map" ]
-
                 NotFound ->
-                    Html.text "Not found"
+                    Html.div []
+                    [ Html.h1 [] [ Html.text "Not Found" ]
+                    ]
     in
     { title = "Prague Air Quality"
-    , body = [ content ]
+    , body = [ header, content ]
     }

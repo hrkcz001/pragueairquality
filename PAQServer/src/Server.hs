@@ -18,13 +18,15 @@ startHandling db = scotty 3000 $ do
     middleware logStdoutDev
 
     -- top level redirects to map
+    get "" $ do
+        redirect "/map"    
     get "/" $ do
         redirect "/map"
 
     -- send index.html and preserve url if page were requested
     get "/:page" $ do
         page <- param "page" :: ActionM Text
-        if page `elem` ["map", "test"]
+        if page `elem` ["map", "events", "about"]
             then do
                     setHeader "Content-Type" "text/html"
                     file "../WebApp/dist/index.html"
