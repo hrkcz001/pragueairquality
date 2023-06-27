@@ -6,6 +6,10 @@ import Mapbox.Source as Source
 import Mapbox.Style as Style exposing (Style(..))
 
 
+
+{- Style for the map, provided by elm-mapbox. -}
+
+
 styleLayers : List Layer
 styleLayers =
     [ Layer.background "background"

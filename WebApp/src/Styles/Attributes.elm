@@ -1,22 +1,23 @@
 module Styles.Attributes exposing
-    ( map
-    , regionInfo
-    , eventInfo
-    , closeButton
-    , titleName
-    , headerBackground
-    , header
-    , entry
+    ( about
     , active
-    , insertButton
-    , inputName
+    , closeButton
+    , entry
+    , eventInfo
+    , header
+    , headerBackground
     , inputDetails
+    , inputName
+    , insertButton
     , insertingSubmit
-    , about
+    , map
+    , regionInfo
+    , titleName
     )
 
 import Html exposing (Attribute)
 import Html.Attributes as Attributes
+
 
 map : List (Attribute msg)
 map =
@@ -28,6 +29,7 @@ map =
     , Attributes.style "left" "0%"
     , Attributes.style "overflow" "hidden"
     ]
+
 
 headerBackground : List (Attribute msg)
 headerBackground =
@@ -42,6 +44,7 @@ headerBackground =
     , Attributes.style "border-bottom" "1px solid #000"
     ]
 
+
 titleName : List (Attribute msg)
 titleName =
     [ Attributes.style "position" "absolute"
@@ -53,6 +56,7 @@ titleName =
     , Attributes.style "padding" "0.5rem"
     , Attributes.style "font-size" "2.125rem"
     ]
+
 
 header : List (Attribute msg)
 header =
@@ -66,6 +70,7 @@ header =
     , Attributes.style "left" "25%"
     ]
 
+
 entry : List (Attribute msg)
 entry =
     [ Attributes.style "display" "table-cell"
@@ -73,11 +78,13 @@ entry =
     , Attributes.style "vertical-align" "middle"
     ]
 
+
 active : List (Attribute msg)
 active =
     [ Attributes.style "text-decoration" "underline"
     , Attributes.style "color" "darkgreen"
     ]
+
 
 closeButton : List (Attribute msg)
 closeButton =
@@ -90,6 +97,7 @@ closeButton =
     , Attributes.style "text-decoration" "none"
     ]
 
+
 insertButton : List (Attribute msg)
 insertButton =
     [ Attributes.style "position" "absolute"
@@ -99,6 +107,7 @@ insertButton =
     , Attributes.style "color" "#000"
     , Attributes.style "text-decoration" "none"
     ]
+
 
 regionInfo : List (Attribute msg)
 regionInfo =
@@ -115,6 +124,7 @@ regionInfo =
     , Attributes.style "border-right" "1px solid #000"
     ]
 
+
 eventInfo : List (Attribute msg)
 eventInfo =
     [ Attributes.style "position" "absolute"
@@ -130,6 +140,7 @@ eventInfo =
     , Attributes.style "border" "1px solid #000"
     ]
 
+
 inputDetails : List (Attribute msg)
 inputDetails =
     [ Attributes.style "position" "absolute"
@@ -140,6 +151,7 @@ inputDetails =
     , Attributes.style "background-color" "#fff"
     , Attributes.style "border" "1px solid #000"
     ]
+
 
 inputName : List (Attribute msg)
 inputName =
@@ -152,6 +164,7 @@ inputName =
     , Attributes.style "border" "1px solid #000"
     ]
 
+
 insertingSubmit : List (Attribute msg)
 insertingSubmit =
     [ Attributes.style "position" "absolute"
@@ -163,6 +176,7 @@ insertingSubmit =
     , Attributes.style "color" "#000"
     , Attributes.style "text-decoration" "none"
     ]
+
 
 about : List (Attribute msg)
 about =

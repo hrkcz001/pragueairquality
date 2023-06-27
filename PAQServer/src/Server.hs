@@ -78,7 +78,7 @@ startHandling db = scotty 3000 $ do
         json events
 
     -- clear and fill database with predefined data
+    -- for debug purposes only
     get "/refill" $ do
         _ <- liftAndCatchIO $ Storage.Control.refill db
         redirect "/"
-
