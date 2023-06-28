@@ -4,10 +4,11 @@ import Browser exposing (Document)
 import Browser.Navigation
 import Html
 import Html.Events exposing (onClick)
-import Map
+import Map exposing (Mode(..))
 import Styles.Attributes
 import Url
 import Url.Parser as UrlParser
+import Mapbox.Element exposing (css)
 
 
 
@@ -29,7 +30,7 @@ main =
 type alias Model =
     { key : Browser.Navigation.Key
     , route : Route
-    , mapModel : Map.Model
+    , mapModel : Maybe Map.Model
     }
 
 
@@ -45,9 +46,7 @@ type Msg
 
 
 type Route
-    = Regions
-    | Events
-    | About
+    = Map
     | NotFound
 
 
@@ -55,12 +54,12 @@ type Route
 --| Url parser
 
 
-routeParser : UrlParser.Parser (Route -> a) a
+routeParser : UrlParser.Parser ( ( Route, Maybe Mode ) -> a) a
 routeParser =
     UrlParser.oneOf
-        [ UrlParser.map Regions (UrlParser.s "map")
-        , UrlParser.map Events (UrlParser.s "events")
-        , UrlParser.map About (UrlParser.s "about")
+        [ UrlParser.map ( Map, Just Regions ) (UrlParser.s "map")
+        , UrlParser.map ( Map, Just Events ) (UrlParser.s "events")
+        , UrlParser.map ( Map, Just About ) (UrlParser.s "about")
         ]
 
 
@@ -68,27 +67,29 @@ routeParser =
 --| Convert a url to a route
 
 
-toRoute : Url.Url -> Route
+toRoute : Url.Url -> ( Route, Maybe Mode )
 toRoute url =
-    Maybe.withDefault NotFound (UrlParser.parse routeParser url)
+    Maybe.withDefault ( NotFound, Nothing ) (UrlParser.parse routeParser url)
 
 
 init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
 init _ url key =
     let
-        route =
+        ( route, mode ) =
             toRoute url
-
         ( mapModel, mapCmd ) =
-            Map.init MapMsg
+            case mode of
+                Just initMode ->
+                    Map.update MapMsg (Map.SetMode initMode) Map.init
+                    |> Tuple.mapFirst Just
+                _ ->
+                    ( Nothing, Cmd.none )
     in
     ( { key = key
       , route = route
       , mapModel = mapModel
       }
-    , Cmd.batch
-        [ mapCmd
-        ]
+    , mapCmd
     )
 
 
@@ -109,14 +110,32 @@ update msg model =
 
         --| Update the route when the url changes
         ChangedUrl url ->
-            ( { model | route = toRoute url }
-            , Cmd.none
+            let
+                ( route, mode ) =
+                    toRoute url
+                ( newMapModel, mapCmd ) =
+                    case mode of
+                        Nothing ->
+                            ( Nothing, Cmd.none )
+
+                        Just newMode ->
+                            Map.update MapMsg (Map.SetMode newMode) (Maybe.withDefault Map.init model.mapModel)
+                            |> Tuple.mapFirst Just
+            in
+            ( { model | route = route, mapModel = newMapModel }
+            , mapCmd
             )
 
         MapMsg mapMsg ->
             let
                 ( newMapModel, mapCmd ) =
-                    Map.update MapMsg mapMsg model.mapModel
+                    case model.mapModel of
+                        Nothing ->
+                            ( Nothing, Cmd.none )
+
+                        Just mapModel ->
+                            Map.update MapMsg mapMsg mapModel
+                            |> Tuple.mapFirst Just
             in
             ( { model | mapModel = newMapModel }
             , mapCmd
@@ -142,16 +161,19 @@ view model =
             , about = Styles.Attributes.entry
             }
 
+        mapMode = 
+            Maybe.map .mode <| model.mapModel
+
         --| Active entry
         entryStyles =
-            case model.route of
-                Regions ->
+            case mapMode of
+                Just Regions ->
                     { defaultStyles | map = Styles.Attributes.entry ++ Styles.Attributes.active }
 
-                Events ->
+                Just Events ->
                     { defaultStyles | events = Styles.Attributes.entry ++ Styles.Attributes.active }
 
-                About ->
+                Just About ->
                     { defaultStyles | about = Styles.Attributes.entry ++ Styles.Attributes.active }
 
                 _ ->
@@ -188,17 +210,15 @@ view model =
         --| Map
         content =
             case model.route of
-                Regions ->
-                    Html.map MapMsg <|
-                        Map.view Map.Regions model.mapModel
+                Map ->
+                    case model.mapModel of
+                        Nothing ->
+                            Html.div []
+                                [ Html.h1 [] [ Html.text "Loading..." ]
+                                ]
 
-                Events ->
-                    Html.map MapMsg <|
-                        Map.view Map.Events model.mapModel
-
-                About ->
-                    Html.map MapMsg <|
-                        Map.view Map.About model.mapModel
+                        Just mapModel ->
+                            Map.view MapMsg mapModel
 
                 NotFound ->
                     Html.div []
@@ -206,5 +226,5 @@ view model =
                         ]
     in
     { title = "Prague Air Quality"
-    , body = [ header, content ]
+    , body = [ css, header, content ]
     }

@@ -36,6 +36,7 @@ import Styles.Streets exposing (styleLayers)
 -}
 type alias Model =
     { hoveredFeatures : List Json.Encode.Value
+    , mode : Mode
     , regions : List Region
     , selectedRegion : Maybe RegionInfo
     , events : List Event
@@ -54,7 +55,8 @@ type alias Model =
 
 
 type Mode
-    = Regions
+    = Loading
+    | Regions
     | Events
     | About
 
@@ -62,6 +64,7 @@ type Mode
 type Msg
     = Hover EventData
     | Click EventData
+    | SetMode Mode
     | GotRegions (Result Http.Error (List Region))
     | GotRegion (Result Http.Error RegionInfo)
     | CloseRegionInfo
@@ -82,25 +85,21 @@ type Msg
 --| Get regions, events and about text from the server
 
 
-init : (Msg -> msg) -> ( Model, Cmd msg )
-init wrapMsg =
-    ( { hoveredFeatures = []
-      , regions = []
-      , selectedRegion = Nothing
-      , events = []
-      , selectedEvent = Nothing
-      , insertMode = False
-      , inserting = Nothing
-      , insertedName = Nothing
-      , insertedDetails = Nothing
-      , about = ""
-      }
-    , Cmd.batch
-        [ Requests.getRegions (wrapMsg << GotRegions)
-        , Requests.getEvents (wrapMsg << GotEvents)
-        , Requests.getAbout (wrapMsg << GotAbout)
-        ]
-    )
+init : Model
+init =
+    { hoveredFeatures = []
+    , mode = Loading
+    , regions = []
+    , selectedRegion = Nothing
+    , events = []
+    , selectedEvent = Nothing
+    , insertMode = False
+    , inserting = Nothing
+    , insertedName = Nothing
+    , insertedDetails = Nothing
+    , about = ""
+    }
+    
 
 
 
@@ -170,6 +169,20 @@ update wrapMsg msg model =
 
             else
                 ( model, cmd )
+
+        SetMode mode ->
+            case mode of
+                Loading ->
+                    ( { model | mode = Loading, hoveredFeatures = [] }, Cmd.none )
+
+                Regions ->
+                    ( { model | mode = Regions, hoveredFeatures = [] }, Requests.getRegions (wrapMsg << GotRegions))
+
+                Events ->
+                    ( { model | mode = Events, hoveredFeatures = [] }, Requests.getEvents (wrapMsg << GotEvents))
+
+                About ->
+                    ( { model | mode = About, hoveredFeatures = [] }, Requests.getAbout (wrapMsg << GotAbout))
 
         GotRegions (Ok regions) ->
             ( { model | regions = regions }, Cmd.none )
@@ -242,18 +255,20 @@ hoveredFeatures =
         >> featureState
 
 
-view : Mode -> Model -> Html Msg
-view mode model =
+view : (Msg -> msg) -> Model -> Html msg
+view wrapMsg model =
     let
         --| floating content can be either region info, event info or about text
         --| depending on the current mode
         content =
-            case mode of
+            case model.mode of
+                Loading ->
+                    div [] []
                 Regions ->
-                    viewRegionInfo CloseRegionInfo model.selectedRegion
+                    viewRegionInfo (wrapMsg CloseRegionInfo) model.selectedRegion
 
                 Events ->
-                    viewEventInfo CloseEventInfo model.selectedEvent
+                    viewEventInfo (wrapMsg CloseEventInfo) model.selectedEvent
 
                 About ->
                     Html.div Styles.Attributes.about
@@ -265,14 +280,14 @@ view mode model =
             if model.insertMode then
                 Html.button
                     (Styles.Attributes.insertButton
-                        ++ [ Html.Events.onClick CancelInsertMode ]
+                        ++ [ Html.Events.onClick (wrapMsg CancelInsertMode) ]
                     )
                     [ text "Cancel" ]
 
             else
                 Html.button
                     (Styles.Attributes.insertButton
-                        ++ [ Html.Events.onClick InsertMode ]
+                        ++ [ Html.Events.onClick (wrapMsg InsertMode) ]
                     )
                     [ text "Add Event" ]
 
@@ -285,20 +300,20 @@ view mode model =
                             [ Html.input
                                 (Styles.Attributes.inputName
                                     ++ [ Html.Attributes.placeholder "Name"
-                                       , Html.Events.onInput InsertedName
+                                       , Html.Events.onInput (wrapMsg << InsertedName)
                                        ]
                                 )
                                 []
                             , Html.textarea
                                 (Styles.Attributes.inputDetails
                                     ++ [ Html.Attributes.placeholder "Details"
-                                       , Html.Events.onInput InsertedDetails
+                                       , Html.Events.onInput (wrapMsg << InsertedDetails)
                                        ]
                                 )
                                 []
                             , Html.button
                                 (Styles.Attributes.closeButton
-                                    ++ [ Html.Events.onClick CancelInsertMode ]
+                                    ++ [ Html.Events.onClick (wrapMsg CancelInsertMode) ]
                                 )
                                 [ text "X" ]
 
@@ -314,7 +329,7 @@ view mode model =
                                                 == Nothing
                                                 || model.insertedDetails
                                                 == Just ""
-                                       , Html.Events.onClick SubmitInsert
+                                       , Html.Events.onClick (wrapMsg SubmitInsert)
                                        ]
                                 )
                                 [ text "Submit" ]
@@ -331,7 +346,7 @@ view mode model =
                 ]
     in
     div []
-        (viewMap mode model
+        (viewMap wrapMsg model
             :: floating
         )
 
@@ -341,12 +356,12 @@ view mode model =
 --| Sources are loaded from geojson code chunks
 
 
-viewMap : Mode -> Model -> Html Msg
-viewMap mode model =
+viewMap : (Msg -> msg) -> Model -> Html msg
+viewMap wrapMsg model =
     let
         --| layers of the map are based on the current mode
         modeLayers =
-            case mode of
+            case model.mode of
                 Regions ->
                     layersFromRegions model.regions
 
@@ -358,7 +373,7 @@ viewMap mode model =
 
         --| layers of the map that listen to events
         modeListenLayers =
-            case mode of
+            case model.mode of
                 Regions ->
                     listenLayersFromRegions model.regions
 
@@ -370,7 +385,7 @@ viewMap mode model =
 
         --| sources of the map are based on the current mode
         modeSources =
-            case mode of
+            case model.mode of
                 Regions ->
                     sourcesFromRegions model.regions
 
@@ -381,8 +396,7 @@ viewMap mode model =
                     []
     in
     div Styles.Attributes.map
-        [ css -- mapbox-gl.css
-        , map
+        [ map
             [ maxZoom 18
             , minZoom 10
             , maxBounds
@@ -390,8 +404,8 @@ viewMap mode model =
                 ( LngLat 14.098789849977067 49.932573881803535
                 , LngLat 14.750530939532837 50.2500770495798
                 )
-            , onMouseMove Hover
-            , onClick Click
+            , onMouseMove (wrapMsg << Hover)
+            , onClick (wrapMsg << Click)
             , id "paq-map"
             , eventFeaturesLayers modeListenLayers
             , hoveredFeatures model.hoveredFeatures --| highlight hovered features
@@ -409,11 +423,10 @@ viewMap mode model =
                     , Style.glyphs "mapbox://fonts/mapbox/{fontstack}/{range}.pbf"
                     ]
                 , layers =
+                    --| layers that are always present
                     styleLayers
-                        --| layers that are always present
+                        --| layers that depend on the current mode
                         ++ modeLayers
-
-                --| layers that depend on the current mode
                 }
             )
         ]
