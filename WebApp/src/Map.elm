@@ -16,6 +16,8 @@ import Requests
 import Styles.Attributes
 import Styles.Streets exposing (styleLayers)
 
+import InsertEvent
+
 
 {-| The model of the map
 
@@ -41,10 +43,7 @@ type alias Model =
     , selectedRegion : Maybe RegionInfo
     , events : List Event
     , selectedEvent : Maybe EventInfo
-    , insertMode : Bool
-    , inserting : Maybe LngLat
-    , insertedName : Maybe String
-    , insertedDetails : Maybe String
+    , insertModel : Maybe InsertEvent.Model
     , about : String
     }
 
@@ -67,16 +66,12 @@ type Msg
     | SetMode Mode
     | GotRegions (Result Http.Error (List Region))
     | GotRegion (Result Http.Error RegionInfo)
-    | CloseRegionInfo
+    | RegionInfoClosed
     | GotEvents (Result Http.Error (List Event))
     | GotEvent (Result Http.Error EventInfo)
-    | CloseEventInfo
+    | EventInfoClosed
     | InsertMode
-    | CancelInsertMode
-    | Inserting LngLat
-    | InsertedName String
-    | InsertedDetails String
-    | SubmitInsert
+    | InsertEventMsg InsertEvent.Msg
     | GotAbout (Result Http.Error String)
 
 
@@ -93,11 +88,8 @@ init =
     , selectedRegion = Nothing
     , events = []
     , selectedEvent = Nothing
-    , insertMode = False
-    , inserting = Nothing
-    , insertedName = Nothing
-    , insertedDetails = Nothing
-    , about = ""
+    , insertModel = Nothing
+    , about = "Loading..."
     }
     
 
@@ -120,6 +112,7 @@ update wrapMsg msg model =
         --| If the map is in insert mode, clicking on the map will start inserting a new event
         --| If the map is not in insert mode, clicking on the map will get the feature name and
         --| request the corresponding info from the server
+
         Click { lngLat, renderedFeatures } ->
             let
                 feature =
@@ -130,7 +123,7 @@ update wrapMsg msg model =
                         |> Result.withDefault ""
                         |> String.split "."
 
-                ( featType, featName ) =
+                ( _, featName ) =
                     case feature of
                         [ a, b ] ->
                             ( a, b )
@@ -138,51 +131,58 @@ update wrapMsg msg model =
                         _ ->
                             ( "", "" )
 
-                cmd =
-                    case featType of
-                        "region" ->
+                ( newModel,  cmd ) =
+                    case model.mode of
+                        Regions ->
                             case featName of
                                 "" ->
-                                    Cmd.none
+                                    ( { model | selectedRegion = Nothing }, Cmd.none )
 
                                 _ ->
-                                    Requests.getRegionInfo featName (wrapMsg << GotRegion)
+                                    ( model, Requests.getRegionInfo featName (wrapMsg << GotRegion))
 
-                        "event" ->
+                        Events ->
                             case featName of
                                 "" ->
-                                    Cmd.none
+                                    case model.insertModel of
+                                        Just insertModel ->
+                                            ( { model | insertModel = (
+                                                Just <|
+                                                InsertEvent.update
+                                                    (InsertEvent.PointChoosed (Just lngLat))
+                                                    insertModel
+                                            )}, Cmd.none )
+
+                                        Nothing ->
+                                            ( { model | selectedEvent = Nothing }, Cmd.none )
 
                                 _ ->
-                                    Requests.getEventInfo featName (wrapMsg << GotEvent)
+                                    ( { model | insertModel = Nothing }, Requests.getEventInfo featName (wrapMsg << GotEvent))
 
                         _ ->
-                            Cmd.none
+                            ( model, Cmd.none)
             in
-            if model.insertMode then
-                case model.inserting of
-                    Just _ ->
-                        ( model, Cmd.none )
-
-                    Nothing ->
-                        ( { model | inserting = Just lngLat }, Cmd.none )
-
-            else
-                ( model, cmd )
+            ( newModel, cmd )
 
         SetMode mode ->
-            case mode of
-                Loading ->
-                    ( { model | mode = Loading, hoveredFeatures = [] }, Cmd.none )
+            let
+                cmd = case mode of
+                        Loading -> 
+                            Cmd.none
 
-                Regions ->
-                    ( { model | mode = Regions, hoveredFeatures = [] }, Requests.getRegions (wrapMsg << GotRegions))
+                        Regions ->
+                            Requests.getRegions (wrapMsg << GotRegions)
 
-                Events ->
-                    ( { model | mode = Events, hoveredFeatures = [] }, Requests.getEvents (wrapMsg << GotEvents))
+                        Events ->
+                            Requests.getEvents (wrapMsg << GotEvents)
 
-                About ->
-                    ( { model | mode = About, hoveredFeatures = [] }, Requests.getAbout (wrapMsg << GotAbout))
+                        About ->
+                            Requests.getAbout (wrapMsg << GotAbout)
+            in
+                ( { model | mode = mode
+                          , hoveredFeatures = [] 
+                          , insertModel = Nothing
+                }, cmd )
 
         GotRegions (Ok regions) ->
             ( { model | regions = regions }, Cmd.none )
@@ -196,7 +196,7 @@ update wrapMsg msg model =
         GotRegion (Err _) ->
             ( { model | selectedRegion = Nothing }, Cmd.none )
 
-        CloseRegionInfo ->
+        RegionInfoClosed ->
             ( { model | selectedRegion = Nothing }, Cmd.none )
 
         GotEvents (Ok events) ->
@@ -211,32 +211,45 @@ update wrapMsg msg model =
         GotEvent (Err _) ->
             ( { model | selectedEvent = Nothing }, Cmd.none )
 
-        CloseEventInfo ->
+        EventInfoClosed ->
             ( { model | selectedEvent = Nothing }, Cmd.none )
 
         InsertMode ->
-            ( { model | insertMode = True }, Cmd.none )
+            ( { model | selectedEvent = Nothing, insertModel = Just InsertEvent.init }, Cmd.none )
 
-        CancelInsertMode ->
-            ( { model | insertMode = False, inserting = Nothing, insertedDetails = Nothing }, Cmd.none )
+        InsertEventMsg insertMsg ->
+            case insertMsg of
+                InsertEvent.InsertCancelled ->
+                    ( { model | insertModel = Nothing }, Cmd.none )
 
-        --| When inserting a new event, the user clicks on the map to select the location
-        Inserting lngLat ->
-            ( { model | inserting = Just lngLat }, Cmd.none )
+                InsertEvent.InsertSubmitted ->
+                    case model.insertModel of
+                        Just insertModel ->
+                            case ( insertModel.insertedPoint, insertModel.insertedName, insertModel.insertedDetails ) of
+                                ( Just point, Just name, Just details ) ->
+                                    ( { model | insertModel = Nothing }, Requests.postEvent 
+                                                                            point
+                                                                            name 
+                                                                            details 
+                                                                            (wrapMsg << GotEvents)
+                                    )
+                                _ ->
+                                    ( model, Cmd.none )
 
-        InsertedName name ->
-            ( { model | insertedName = Just name }, Cmd.none )
-
-        InsertedDetails details ->
-            ( { model | insertedDetails = Just details }, Cmd.none )
-
-        SubmitInsert ->
-            case ( model.inserting, model.insertedName, model.insertedDetails ) of
-                ( Just point, Just name, Just details ) ->
-                    ( { model | insertMode = False, inserting = Nothing, insertedDetails = Nothing }, Requests.postEvent point name details (wrapMsg << GotEvents) )
+                        Nothing ->
+                            ( model, Cmd.none )
 
                 _ ->
-                    ( model, Cmd.none )
+                    case model.insertModel of
+                        Just insertModel ->
+                            let
+                                newInsertModel =
+                                    InsertEvent.update insertMsg insertModel
+                            in
+                            ( { model | insertModel = Just newInsertModel }, Cmd.none )
+
+                        Nothing ->
+                            ( model, Cmd.none )
 
         GotAbout (Ok about) ->
             ( { model | about = about }, Cmd.none )
@@ -265,10 +278,10 @@ view wrapMsg model =
                 Loading ->
                     div [] []
                 Regions ->
-                    viewRegionInfo (wrapMsg CloseRegionInfo) model.selectedRegion
+                    viewRegionInfo (wrapMsg RegionInfoClosed) model.selectedRegion
 
                 Events ->
-                    viewEventInfo (wrapMsg CloseEventInfo) model.selectedEvent
+                    viewEventInfo (wrapMsg EventInfoClosed) model.selectedEvent
 
                 About ->
                     Html.div Styles.Attributes.about
@@ -277,78 +290,30 @@ view wrapMsg model =
 
         --| button to start inserting a new event
         insertButton =
-            if model.insertMode then
-                Html.button
-                    (Styles.Attributes.insertButton
-                        ++ [ Html.Events.onClick (wrapMsg CancelInsertMode) ]
-                    )
-                    [ text "Cancel" ]
-
-            else
+            if model.mode == Events && model.insertModel == Nothing then
                 Html.button
                     (Styles.Attributes.insertButton
                         ++ [ Html.Events.onClick (wrapMsg InsertMode) ]
                     )
                     [ text "Add Event" ]
-
-        --| floating content is only shown when the map is not in insert mode
-        floating =
-            if model.insertMode then
-                case model.inserting of
-                    Just _ ->
-                        [ div Styles.Attributes.eventInfo
-                            [ Html.input
-                                (Styles.Attributes.inputName
-                                    ++ [ Html.Attributes.placeholder "Name"
-                                       , Html.Events.onInput (wrapMsg << InsertedName)
-                                       ]
-                                )
-                                []
-                            , Html.textarea
-                                (Styles.Attributes.inputDetails
-                                    ++ [ Html.Attributes.placeholder "Details"
-                                       , Html.Events.onInput (wrapMsg << InsertedDetails)
-                                       ]
-                                )
-                                []
-                            , Html.button
-                                (Styles.Attributes.closeButton
-                                    ++ [ Html.Events.onClick (wrapMsg CancelInsertMode) ]
-                                )
-                                [ text "X" ]
-
-                            --| disable submit button if name or details are empty
-                            , Html.button
-                                (Styles.Attributes.insertingSubmit
-                                    ++ [ Html.Attributes.disabled <|
-                                            model.insertedName
-                                                == Nothing
-                                                || model.insertedName
-                                                == Just ""
-                                                || model.insertedDetails
-                                                == Nothing
-                                                || model.insertedDetails
-                                                == Just ""
-                                       , Html.Events.onClick (wrapMsg SubmitInsert)
-                                       ]
-                                )
-                                [ text "Submit" ]
-                            ]
-                        ]
-
-                    --| if the user has not yet clicked on the map to select a location
-                    Nothing ->
-                        [insertButton]
-
             else
-                [ insertButton
-                , content
-                ]
+                Html.div [] []
+
+        insertForm =
+            case model.insertModel of
+                Just insertModel ->
+                    InsertEvent.view (wrapMsg << InsertEventMsg) insertModel
+
+                Nothing ->
+                    Html.div [] []
+
     in
     div []
-        (viewMap wrapMsg model
-            :: floating
-        )
+        [viewMap wrapMsg model
+        , content
+        , insertButton
+        , insertForm
+        ]
 
 
 
