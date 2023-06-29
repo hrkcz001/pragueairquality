@@ -126,7 +126,7 @@ update wrapMsg msg model =
                         |> Result.withDefault ""
                         |> String.split "."
 
-                ( _, featName ) =
+                ( featType, featName ) =
                     case feature of
                         [ a, b ] ->
                             ( a, b )
@@ -135,8 +135,8 @@ update wrapMsg msg model =
                             ( "", "" )
 
                 ( newModel,  cmd ) =
-                    case model.mode of
-                        Regions ->
+                    case ( featType, model.mode ) of
+                        ( "region", Regions ) ->
                             case featName of
                                 "" ->
                                     ( { model | selectedRegion = Nothing }, Cmd.none )
@@ -144,9 +144,11 @@ update wrapMsg msg model =
                                 _ ->
                                     ( model, Requests.getRegionInfo featName (wrapMsg << GotRegion))
 
-                        Events ->
-                            case featName of
-                                "" ->
+                        ( _, Events ) ->
+                            case ( featType, featName ) of
+                                ( "event", _ ) ->
+                                    ( { model | insertModel = Nothing }, Requests.getEventInfo featName (wrapMsg << GotEvent))
+                                _ ->
                                     case model.insertModel of
                                         Just insertModel ->
                                             ( { model | insertModel = (
@@ -158,9 +160,6 @@ update wrapMsg msg model =
 
                                         Nothing ->
                                             ( { model | selectedEvent = Nothing }, Cmd.none )
-
-                                _ ->
-                                    ( { model | insertModel = Nothing }, Requests.getEventInfo featName (wrapMsg << GotEvent))
 
                         _ ->
                             ( model, Cmd.none)

@@ -47,7 +47,8 @@ view wrapMsg model =
     case model.insertedPoint of
         Nothing ->
             Html.div []
-                [ Html.text "Choose a point on the map first"
+                [ Html.div Styles.Attributes.choosePointHint
+                    [Html.text "Choose a point on the map"]
                 , Html.button
                     (Styles.Attributes.insertButton
                         ++ [ Html.Events.onClick (wrapMsg InsertCancelled) ]

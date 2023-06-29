@@ -9,6 +9,7 @@ module Styles.Attributes exposing
     , inputDetails
     , inputName
     , insertButton
+    , choosePointHint
     , insertingSubmit
     , map
     , regionInfo
@@ -103,7 +104,21 @@ insertButton =
     [ Attributes.style "position" "absolute"
     , Attributes.style "top" "9%"
     , Attributes.style "right" "2%"
+    , Attributes.style "font-size" "1.2rem"
     , Attributes.style "cursor" "pointer"
+    , Attributes.style "color" "#000"
+    , Attributes.style "text-decoration" "none"
+    ]
+
+choosePointHint : List (Attribute msg)
+choosePointHint =
+    [ Attributes.style "position" "absolute"
+    , Attributes.style "text-align" "center"
+    , Attributes.style "top" "10%"
+    , Attributes.style "left" "0%"
+    , Attributes.style "width" "100%"
+    , Attributes.style "font-size" "1.5rem"
+    , Attributes.style "font-weight" "bold"
     , Attributes.style "color" "#000"
     , Attributes.style "text-decoration" "none"
     ]
