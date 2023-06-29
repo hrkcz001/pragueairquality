@@ -10,12 +10,12 @@ import LngLat exposing (LngLat)
 import Mapbox.Element exposing (..)
 import Mapbox.Source as Source
 import Mapbox.Style as Style exposing (Style(..))
-import Region exposing (..)
 import Requests
 import Styles.Attributes
 import Styles.Streets exposing (styleLayers)
 
 import InsertEvent
+import Region exposing (layersFromRegions, listenLayersFromRegions, sourcesFromRegions)
 
 
 {-| The model of the map
@@ -38,8 +38,7 @@ import InsertEvent
 type alias Model =
     { hoveredFeatures : List Json.Encode.Value
     , mode : Mode
-    , regions : List Region
-    , selectedRegion : Maybe RegionInfo
+    , regionsModel : Maybe Region.Model
     , events : List Event
     , selectedEvent : Maybe EventInfo
     , insertModel : Maybe InsertEvent.Model
@@ -64,9 +63,7 @@ type Msg
     | MovedOut EventData
     | Click EventData
     | SetMode Mode
-    | GotRegions (Result Http.Error (List Region))
-    | GotRegion (Result Http.Error RegionInfo)
-    | RegionInfoClosed
+    | RegionMsg Region.Msg
     | GotEvents (Result Http.Error (List Event))
     | GotEvent (Result Http.Error EventInfo)
     | EventInfoClosed
@@ -84,8 +81,7 @@ init : Model
 init =
     { hoveredFeatures = []
     , mode = Loading
-    , regions = []
-    , selectedRegion = Nothing
+    , regionsModel = Nothing
     , events = []
     , selectedEvent = Nothing
     , insertModel = Nothing
@@ -139,10 +135,30 @@ update wrapMsg msg model =
                         ( "region", Regions ) ->
                             case featName of
                                 "" ->
-                                    ( { model | selectedRegion = Nothing }, Cmd.none )
+                                    let 
+                                        ( newRegionsModel, regionCmd ) =
+                                            case model.regionsModel of
+                                                Just regionsModel ->
+                                                    Region.update (wrapMsg << RegionMsg) Region.RegionInfoClosed regionsModel
+                                                    |> Tuple.mapFirst Just
+
+                                                Nothing ->
+                                                    ( Nothing, Cmd.none )
+                                    in
+                                    ( { model | regionsModel = newRegionsModel }, regionCmd )
 
                                 _ ->
-                                    ( model, Requests.getRegionInfo featName (wrapMsg << GotRegion))
+                                    let 
+                                        ( newRegionsModel, regionCmd ) =
+                                            case model.regionsModel of
+                                                Just regionsModel ->
+                                                    Region.update (wrapMsg << RegionMsg) (Region.RegionSelected featName) regionsModel
+                                                    |> Tuple.mapFirst Just
+
+                                                Nothing ->
+                                                    ( Nothing, Cmd.none )
+                                    in
+                                    ( { model | regionsModel = newRegionsModel }, regionCmd )
 
                         ( _, Events ) ->
                             case ( featType, featName ) of
@@ -168,38 +184,49 @@ update wrapMsg msg model =
 
         SetMode mode ->
             let
-                cmd = case mode of
-                        Loading -> 
-                            Cmd.none
-
+                ( newModel, cmd ) =
+                    case mode of
                         Regions ->
-                            Requests.getRegions (wrapMsg << GotRegions)
+                            let
+                                ( newRegionsModel, regionCmd ) =
+                                    case model.regionsModel of
+                                        Just regionsModel ->
+                                            Region.update (wrapMsg << RegionMsg) Region.RegionsRequested regionsModel
+                                            |> Tuple.mapFirst Just
+
+                                        Nothing ->
+                                            Region.init (wrapMsg << RegionMsg)
+                                            |> Tuple.mapFirst Just
+                            in
+                            ( { model | regionsModel = newRegionsModel }, regionCmd )
 
                         Events ->
-                            Requests.getEvents (wrapMsg << GotEvents)
+                            ( model, Requests.getEvents (wrapMsg << GotEvents) )
 
                         About ->
-                            Requests.getAbout (wrapMsg << GotAbout)
+                            ( { model | about = "Loading..."
+                            }, Requests.getAbout (wrapMsg << GotAbout) )
+
+                        _ ->
+                            ( model, Cmd.none )
             in
-                ( { model | mode = mode
-                          , hoveredFeatures = [] 
-                          , insertModel = Nothing
-                }, cmd )
+            ( { newModel | mode = mode
+                         , hoveredFeatures = []
+                         , insertModel = Nothing
+            }, cmd )
 
-        GotRegions (Ok regions) ->
-            ( { model | regions = regions }, Cmd.none )
+        RegionMsg regionMsg ->
+            let
+                ( newRegionsModel, regionCmd ) =
+                    case model.regionsModel of
+                        Just regionsModel ->
+                            Region.update (wrapMsg << RegionMsg) regionMsg regionsModel
+                            |> Tuple.mapFirst Just
 
-        GotRegions (Err _) ->
-            ( model, Cmd.none )
-
-        GotRegion (Ok regionInfo) ->
-            ( { model | selectedRegion = Just regionInfo }, Cmd.none )
-
-        GotRegion (Err _) ->
-            ( { model | selectedRegion = Nothing }, Cmd.none )
-
-        RegionInfoClosed ->
-            ( { model | selectedRegion = Nothing }, Cmd.none )
+                        Nothing ->
+                            ( Nothing, Cmd.none )
+            in
+            ( { model | regionsModel = newRegionsModel }, regionCmd )
 
         GotEvents (Ok events) ->
             ( { model | events = events }, Cmd.none )
@@ -280,7 +307,12 @@ view wrapMsg model =
                 Loading ->
                     div [] []
                 Regions ->
-                    viewRegionInfo (wrapMsg RegionInfoClosed) model.selectedRegion
+                    case model.regionsModel of
+                        Just regionsModel ->
+                            Region.viewRegionInfo (wrapMsg << RegionMsg) regionsModel
+
+                        Nothing ->
+                            div [] []
 
                 Events ->
                     viewEventInfo (wrapMsg EventInfoClosed) model.selectedEvent
@@ -330,7 +362,11 @@ viewMap wrapMsg model =
         modeLayers =
             case model.mode of
                 Regions ->
-                    layersFromRegions model.regions
+                    case model.regionsModel of
+                        Just regionsModel ->
+                            layersFromRegions regionsModel
+                        Nothing ->
+                            []
 
                 Events ->
                     layersFromEvents model.events
@@ -342,7 +378,11 @@ viewMap wrapMsg model =
         modeListenLayers =
             case model.mode of
                 Regions ->
-                    listenLayersFromRegions model.regions
+                    case model.regionsModel of
+                        Just regionsModel ->
+                            listenLayersFromRegions regionsModel
+                        Nothing ->
+                            []
 
                 Events ->
                     listenLayersFromEvents model.events
@@ -354,7 +394,11 @@ viewMap wrapMsg model =
         modeSources =
             case model.mode of
                 Regions ->
-                    sourcesFromRegions model.regions
+                    case model.regionsModel of
+                        Just regionsModel ->
+                            sourcesFromRegions regionsModel
+                        Nothing ->
+                            []
 
                 Events ->
                     sourcesFromEvents model.events

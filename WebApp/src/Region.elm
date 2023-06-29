@@ -1,5 +1,6 @@
-module Region exposing (..)
+module Region exposing (Model, Msg(..), init, update, sourcesFromRegions, layersFromRegions, listenLayersFromRegions, viewRegionInfo)
 
+import Http
 import Html exposing (Html)
 import Html.Events
 import Json.Decode
@@ -10,7 +11,19 @@ import Mapbox.Layer as Layer
 import Mapbox.Source as Source
 import Styles.Attributes
 
+import Requests
 
+type alias Model =
+    { regions : List Region
+    , regionInfo : Maybe RegionInfo
+    }
+
+type Msg
+    = RegionsRequested
+    | GotRegions (Result Http.Error (List Region))
+    | GotRegion (Result Http.Error RegionInfo)
+    | RegionSelected String
+    | RegionInfoClosed
 
 --| A region is a polygon with a name and a level (Color)
 
@@ -33,6 +46,37 @@ type alias RegionInfo =
     }
 
 
+init : ( Msg -> msg ) -> ( Model, Cmd msg )
+init wrapMsg =
+    ( { regions = [], regionInfo = Nothing }
+    , Requests.getRegions (wrapMsg << GotRegions)
+    )
+
+
+update : ( Msg -> msg ) -> Msg -> Model -> ( Model, Cmd msg )
+update wrapMsg msg model =
+    case msg of
+        RegionsRequested ->
+            ( model, Requests.getRegions (wrapMsg << GotRegions) )
+
+        GotRegions (Ok regions) ->
+            ( { model | regions = regions }, Cmd.none )
+
+        GotRegions (Err _) ->
+            ( model, Cmd.none )
+
+        GotRegion (Ok regionInfo) ->
+            ( { model | regionInfo = Just regionInfo }, Cmd.none )
+
+        GotRegion (Err _) ->
+            ( model, Cmd.none )
+
+        RegionSelected regionName ->
+            ( model, Requests.getRegionInfo regionName (wrapMsg << GotRegion) )
+
+        RegionInfoClosed ->
+            ( { model | regionInfo = Nothing }, Cmd.none )
+
 
 --| Create a list of sources collections from a list of regions
 --| I use separate features collections for each regions
@@ -41,8 +85,8 @@ type alias RegionInfo =
 --| (or at least could be minimized to separate featues collections for each level)
 
 
-sourcesFromRegions : List Region -> List Source.Source
-sourcesFromRegions regions =
+sourcesFromRegions : Model -> List Source.Source
+sourcesFromRegions model =
     let
         polygonClose region =
             case region.polygon of
@@ -80,7 +124,7 @@ sourcesFromRegions regions =
             }
             """) |> Result.withDefault (Json.Encode.object [])
     in
-    regions
+    model.regions
         |> List.map (\region -> Source.geoJSONFromValue region.name [ Source.generateIds ] (regionToSource region))
 
 
@@ -101,8 +145,8 @@ colorFromLevel level =
 --| Create a list of layers from a list of regions
 
 
-layersFromRegions : List Region -> List Layer.Layer
-layersFromRegions regions =
+layersFromRegions : Model -> List Layer.Layer
+layersFromRegions model =
     List.map
         (\region ->
             Layer.fill ("region." ++ region.name)
@@ -116,7 +160,7 @@ layersFromRegions regions =
                     )
                 ]
         )
-        regions
+        model.regions
 
 
 
@@ -124,18 +168,18 @@ layersFromRegions regions =
 --| Used to listen to events on regions
 
 
-listenLayersFromRegions : List Region -> List String
-listenLayersFromRegions regions =
-    List.map (\region -> "region." ++ region.name) regions
+listenLayersFromRegions : Model -> List String
+listenLayersFromRegions model =
+    List.map (\region -> "region." ++ region.name) model.regions
 
 
 
 --| View a region info
 
 
-viewRegionInfo : msg -> Maybe RegionInfo -> Html msg
-viewRegionInfo mapMsg regionInfo =
-    case regionInfo of
+viewRegionInfo : ( Msg -> msg ) -> Model -> Html msg
+viewRegionInfo wrapMsg model =
+    case model.regionInfo of
         Just info ->
             Html.div Styles.Attributes.regionInfo
                 [ Html.h2 [] [ Html.text info.name ]
@@ -143,7 +187,7 @@ viewRegionInfo mapMsg regionInfo =
                 , Html.p [] [ Html.text info.description ]
                 , Html.button
                     (Styles.Attributes.closeButton
-                        ++ [ Html.Events.onClick mapMsg ]
+                        ++ [ Html.Events.onClick (wrapMsg RegionInfoClosed) ]
                     )
                     [ Html.text "X" ]
                 ]
