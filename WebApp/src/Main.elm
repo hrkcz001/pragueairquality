@@ -8,8 +8,6 @@ import Map exposing (Mode(..))
 import Styles.Attributes
 import Url
 import Url.Parser as UrlParser
-import Mapbox.Element exposing (css)
-
 
 
 -- MAIN
@@ -226,5 +224,5 @@ view model =
                         ]
     in
     { title = "Prague Air Quality"
-    , body = [ css, header, content ]
+    , body = [ header, content ]
     }

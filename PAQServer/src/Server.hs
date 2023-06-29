@@ -41,7 +41,13 @@ startHandling db = scotty 3000 $ do
                     file "../WebApp/dist/main.js"
             "about.txt" -> do
                     setHeader "Content-Type" "text/plain"
-                    file "about.txt"
+                    file "./static/about.txt"
+            "mapbox-gl.css" -> do
+                    setHeader "Content-Type" "text/css"
+                    file "./static/mapbox-gl.css"
+            "mapbox-gl.js" -> do
+                    setHeader "Content-Type" "application/javascript"
+                    file "./static/mapbox-gl.js"
             _ -> next
 
     -- send regions { name : text, level : int, polygon : list of { lat : float, lon : float } }

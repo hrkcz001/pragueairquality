@@ -2,7 +2,8 @@
   "dependencies": {
     "elm": "^0.19.1-5",
     "elm-webpack-loader": "^8.0.0",
-    "html-webpack-plugin": "^5.5.3"
+    "html-webpack-plugin": "^5.5.3",
+    "html-webpack-tags-plugin": "^3.0.2"
   },
   "devDependencies": {
     "elm-mapbox": "^4.1.0",

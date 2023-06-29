@@ -1,5 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const HtmlWebpackTagsPlugin = require('html-webpack-tags-plugin');
 
 module.exports = {
     // define entrypoints for JavaScript and SCSS
@@ -41,6 +42,14 @@ module.exports = {
         // generate Html using HtmlWebpackPlugin
         new HtmlWebpackPlugin({
             title: 'Prague Air Quality'
-        })
+        }),
+
+        new HtmlWebpackTagsPlugin({
+              append: true,
+              tags: [
+                'mapbox-gl.js',
+                'mapbox-gl.css',
+              ],
+            })
     ]
 };
