@@ -20,4 +20,4 @@
 
 `stack run`
 
-then go to `localhost:3000/refill` to inialize database
+then go to `localhost:3000/refill` to initialize database
