@@ -2,7 +2,6 @@ module Map exposing (Mode(..), Model, Msg(..), init, update, view)
 
 import Event exposing (..)
 import Html exposing (Html, div, text)
-import Html.Attributes
 import Html.Events
 import Http
 import Json.Decode
@@ -62,6 +61,7 @@ type Mode
 
 type Msg
     = Hover EventData
+    | MovedOut EventData
     | Click EventData
     | SetMode Mode
     | GotRegions (Result Http.Error (List Region))
@@ -70,7 +70,7 @@ type Msg
     | GotEvents (Result Http.Error (List Event))
     | GotEvent (Result Http.Error EventInfo)
     | EventInfoClosed
-    | InsertMode
+    | InsertModeEntered
     | InsertEventMsg InsertEvent.Msg
     | GotAbout (Result Http.Error String)
 
@@ -108,6 +108,9 @@ update wrapMsg msg model =
     case msg of
         Hover { renderedFeatures } ->
             ( { model | hoveredFeatures = renderedFeatures }, Cmd.none )
+
+        MovedOut _ ->
+            ( { model | hoveredFeatures = [] }, Cmd.none )
 
         --| If the map is in insert mode, clicking on the map will start inserting a new event
         --| If the map is not in insert mode, clicking on the map will get the feature name and
@@ -214,7 +217,7 @@ update wrapMsg msg model =
         EventInfoClosed ->
             ( { model | selectedEvent = Nothing }, Cmd.none )
 
-        InsertMode ->
+        InsertModeEntered ->
             ( { model | selectedEvent = Nothing, insertModel = Just InsertEvent.init }, Cmd.none )
 
         InsertEventMsg insertMsg ->
@@ -293,7 +296,7 @@ view wrapMsg model =
             if model.mode == Events && model.insertModel == Nothing then
                 Html.button
                     (Styles.Attributes.insertButton
-                        ++ [ Html.Events.onClick (wrapMsg InsertMode) ]
+                        ++ [ Html.Events.onClick (wrapMsg InsertModeEntered) ]
                     )
                     [ text "Add Event" ]
             else
@@ -371,6 +374,7 @@ viewMap wrapMsg model =
                 )
             , onMouseMove (wrapMsg << Hover)
             , onClick (wrapMsg << Click)
+            , onMouseOut (wrapMsg << MovedOut)
             , id "paq-map"
             , eventFeaturesLayers modeListenLayers
             , hoveredFeatures model.hoveredFeatures --| highlight hovered features

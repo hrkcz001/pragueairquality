@@ -25,8 +25,7 @@ module.exports = {
                 use: {
                     loader: 'elm-webpack-loader',
                     options: {
-                        verbose: true,
-                        optimize: process.env.NODE_ENV === 'production' ? true : false,
+                        verbose: true
                     }
                 }
             }
